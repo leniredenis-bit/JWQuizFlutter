@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/question.dart';
+import '../models/stats_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final List<Question> questions;
@@ -14,6 +15,7 @@ class QuizScreen extends StatefulWidget {
 class _QuizScreenState extends State<QuizScreen> {
   int currentQuestionIndex = 0;
   int score = 0;
+  int correctAnswersCount = 0;
   int? selectedAnswer;
   bool showResult = false;
   Timer? _timer;
@@ -58,6 +60,7 @@ class _QuizScreenState extends State<QuizScreen> {
     if (index == widget.questions[currentQuestionIndex].respostaCorreta) {
       setState(() {
         score += calculatePoints();
+        correctAnswersCount++;
       });
     }
 
@@ -71,9 +74,9 @@ class _QuizScreenState extends State<QuizScreen> {
     final question = widget.questions[currentQuestionIndex];
     int basePoints = 10;
     
-    if (question.dificuldade == 'Difícil') {
+    if (question.dificuldade == 3) { // Difícil
       basePoints = 20;
-    } else if (question.dificuldade == 'Médio') {
+    } else if (question.dificuldade == 2) { // Médio
       basePoints = 15;
     }
     
@@ -96,7 +99,15 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  void showQuizResult() {
+  void showQuizResult() async {
+    // Salvar estatísticas
+    await StatsService.saveQuizStats(
+      score: score,
+      questionsAnswered: widget.questions.length,
+      correctAnswers: correctAnswersCount,
+    );
+    
+    if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -189,7 +200,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 ),
                 Chip(
-                  label: Text(question.dificuldade),
+                  label: Text(question.getDificuldadeTexto()),
                   backgroundColor: Color(0xFF23395D),
                   labelStyle: TextStyle(color: Colors.white),
                 ),
@@ -197,21 +208,35 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             SizedBox(height: 24),
             
-            // Enunciado
+            // ID e Pergunta
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Color(0xFF162447),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(
-                question.enunciado,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pergunta #${question.id}',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w300,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    question.pergunta,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 24),
@@ -219,7 +244,7 @@ class _QuizScreenState extends State<QuizScreen> {
             // Alternativas
             Expanded(
               child: ListView.builder(
-                itemCount: question.alternativas.length,
+                itemCount: question.opcoes.length,
                 itemBuilder: (context, index) {
                   final isSelected = selectedAnswer == index;
                   final isCorrect = index == question.respostaCorreta;
@@ -246,7 +271,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                       onPressed: () => selectAnswer(index),
                       child: Text(
-                        question.alternativas[index],
+                        question.opcoes[index],
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -258,6 +283,47 @@ class _QuizScreenState extends State<QuizScreen> {
                 },
               ),
             ),
+            
+            // Referência Bíblica (aparece após responder)
+            if (showResult && question.referencia != null && question.referencia!.isNotEmpty)
+              Container(
+                padding: EdgeInsets.all(12),
+                margin: EdgeInsets.only(top: 8, bottom: 8),
+                decoration: BoxDecoration(
+                  color: Color(0xFF162447),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.book, color: Colors.white70, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          question.referencia!,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (question.textoBiblico != null && question.textoBiblico!.isNotEmpty) ...[
+                      SizedBox(height: 8),
+                      Text(
+                        question.textoBiblico!,
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
           ],
         ),
       ),

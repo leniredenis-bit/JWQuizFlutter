@@ -4,6 +4,7 @@ import '../models/question.dart';
 import 'quiz_screen.dart';
 import 'memory_game_screen.dart';
 import 'stats_screen.dart';
+import 'multiplayer/multiplayer_menu_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final int initialTagsCount = 7;
   final List<Map<String, String>> modes = [
     {'emoji': '🧠', 'title': 'Quiz Clássico', 'desc': 'Responda perguntas e marque pontos!'},
+    {'emoji': '🌐', 'title': 'Partida Online', 'desc': 'Jogue com amigos em tempo real!'},
     {'emoji': '🕹️', 'title': 'Jogo da Memória', 'desc': 'Encontre pares bíblicos!'},
     {'emoji': '📊', 'title': 'Estatísticas', 'desc': 'Veja seu desempenho e conquistas!'},
   ];
@@ -197,10 +199,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed = () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MemoryGameScreen()),
+                    MaterialPageRoute(builder: (context) => MultiplayerMenuScreen()),
                   );
                 };
               } else if (index == 2) {
+                onPressed = () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MemoryGameScreen()),
+                  );
+                };
+              } else if (index == 3) {
                 onPressed = () {
                   Navigator.push(
                     context,

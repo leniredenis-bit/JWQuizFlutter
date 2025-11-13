@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
+import 'services/multiplayer/mock_multiplayer_service.dart';
 
 void main() {
+  // Inicializar serviço multiplayer
+  MockMultiplayerService.initialize();
+  
   runApp(const MyApp());
 }
 

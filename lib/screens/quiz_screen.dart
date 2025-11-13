@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/question.dart';
 import '../models/stats_service.dart';
+import '../utils/timer_calculator.dart';
 
 class QuizScreen extends StatefulWidget {
   final List<Question> questions;
@@ -34,7 +35,10 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void startTimer() {
-    timeRemaining = 30;
+    // Calcular tempo dinamicamente baseado na pergunta atual
+    final currentQuestion = widget.questions[currentQuestionIndex];
+    timeRemaining = TimerCalculator.calculateQuizTime(currentQuestion);
+    
     _timer?.cancel();
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (timeRemaining > 0) {

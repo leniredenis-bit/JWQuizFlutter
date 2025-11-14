@@ -1,0 +1,27 @@
+/* Suporte aprimorado para emojis coloridos no Flutter Web */
+
+/* Força emojis a renderizarem com cor em todos os navegadores */
+* {
+  font-variant-emoji: emoji;
+}
+
+/* Configuração específica para texto com emojis */
+body, p, span, div, h1, h2, h3, h4, h5, h6 {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Garante que emojis usem apresentação colorida, não texto */
+.emoji, [data-emoji] {
+  font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Sans', sans-serif;
+  font-variant-emoji: emoji;
+  text-rendering: optimizeLegibility;
+}
+
+/* Previne que emojis sejam renderizados como texto monocromático */
+img.emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.1em;
+}

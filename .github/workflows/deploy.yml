@@ -27,7 +27,7 @@ jobs:
         run: flutter pub get
       
       - name: Build web
-        run: flutter build web --release --base-href /JWQuizFlutter/
+        run: flutter build web --release --web-renderer canvaskit --base-href /JWQuizFlutter/
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3

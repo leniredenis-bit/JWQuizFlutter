@@ -248,10 +248,6 @@ class _MultiplayerQuizScreenState extends State<MultiplayerQuizScreen> {
     );
   }
 
-  bool get _isHost {
-    return _currentRoom?.hostId == widget.playerId;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading || _currentRoom == null || _currentQuestion == null) {

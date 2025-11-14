@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import '../../models/multiplayer/room.dart';
-import '../../models/multiplayer/player.dart';
 import '../../services/multiplayer/mock_multiplayer_service.dart';
 import 'multiplayer_quiz_screen.dart';
 

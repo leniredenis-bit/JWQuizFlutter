@@ -2,8 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import '../../models/multiplayer/room.dart';
 import '../../models/multiplayer/player.dart';
-import '../../models/multiplayer/game_state.dart';
-import '../../models/question.dart';
 import '../../models/quiz_service.dart';
 
 /// Serviço MOCK para simular backend multiplayer

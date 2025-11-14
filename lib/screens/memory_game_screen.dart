@@ -521,18 +521,34 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
+              // Repetir com mesmas configurações
+              setState(() {
+                playerScores = List.filled(numPlayers, 0);
+                currentPlayer = 0;
+                attempts = 0;
+                matches = 0;
+                secondsElapsed = 0;
+              });
+              initializeGame();
+              startTimer();
+            },
+            child: Text('🔁 Repetir', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
               setState(() {
                 showConfig = true; // Volta para tela de configuração
               });
             },
-            child: Text('Nova Partida', style: TextStyle(color: Colors.white)),
+            child: Text('Nova Partida', style: TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
-            child: Text('Voltar', style: TextStyle(color: Colors.white70)),
+            child: Text('Início', style: TextStyle(color: Colors.white70)),
           ),
         ],
       ),

@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final int initialTagsCount = 7;
   final List<Map<String, String>> modes = [
     {'emoji': '🧠', 'title': 'Quiz Clássico', 'desc': 'Responda perguntas e marque pontos!'},
+    {'emoji': '🥧', 'title': 'Quiz Torta na Cara', 'desc': 'Duelo 1v1 local - quem errar perde!'},
     {'emoji': '🌐', 'title': 'Partida Online', 'desc': 'Jogue com amigos em tempo real!'},
     {'emoji': '🕹️', 'title': 'Jogo da Memória', 'desc': 'Encontre pares bíblicos!'},
     {'emoji': '📊', 'title': 'Estatísticas', 'desc': 'Veja seu desempenho e conquistas!'},
@@ -119,8 +120,86 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Filtros de dificuldade
-            Text('Dificuldade', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+            // Botões compactos de modo de jogo (MOVIDOS PARA CIMA)
+            ...modes.asMap().entries.map((entry) {
+              final index = entry.key;
+              final mode = entry.value;
+              
+              VoidCallback? onPressed;
+              if (index == 0) {
+                onPressed = startQuiz;
+              } else if (index == 1) {
+                // Quiz Torta na Cara - Duelo 1v1
+                onPressed = () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('🥧 Quiz Torta na Cara em desenvolvimento!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  // TODO: Implementar tela de duelo local
+                  // Navigator.push(context, MaterialPageRoute(builder: (context) => PieQuizScreen()));
+                };
+              } else if (index == 2) {
+                onPressed = () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MultiplayerMenuScreen()),
+                  );
+                };
+              } else if (index == 3) {
+                onPressed = () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MemoryGameScreen()),
+                  );
+                };
+              } else if (index == 4) {
+                onPressed = () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => StatsScreen()),
+                  );
+                };
+              }
+              
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF23395D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    elevation: 2,
+                  ),
+                  onPressed: onPressed,
+                  child: Row(
+                    children: [
+                      Text(mode['emoji']!, style: TextStyle(fontSize: 28)),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(mode['title']!, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(mode['desc']!, style: TextStyle(color: Colors.white70, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+            
+            SizedBox(height: 24),
+            Divider(color: Colors.white24),
+            SizedBox(height: 16),
+            
+            // Filtros de dificuldade (MOVIDOS PARA BAIXO)
+            Text('Dificuldade', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: 8),
             Row(
               children: difficulties.map((dif) => Padding(
@@ -141,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             SizedBox(height: 16),
             // Tags de categorias
-            Text('Categorias', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+            Text('Categorias', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: 8),
             isLoadingTags 
               ? Center(
@@ -193,68 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                   ],
                 ),
-            SizedBox(height: 24),
-            // Botões compactos de modo de jogo
-            ...modes.asMap().entries.map((entry) {
-              final index = entry.key;
-              final mode = entry.value;
-              
-              VoidCallback? onPressed;
-              if (index == 0) {
-                onPressed = startQuiz;
-              } else if (index == 1) {
-                onPressed = () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MultiplayerMenuScreen()),
-                  );
-                };
-              } else if (index == 2) {
-                onPressed = () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MemoryGameScreen()),
-                  );
-                };
-              } else if (index == 3) {
-                onPressed = () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => StatsScreen()),
-                  );
-                };
-              }
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF23395D),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                    elevation: 2,
-                  ),
-                  onPressed: onPressed,
-                  child: Row(
-                    children: [
-                      Text(mode['emoji']!, style: TextStyle(fontSize: 28)),
-                      SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(mode['title']!, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(mode['desc']!, style: TextStyle(color: Colors.white70, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+            SizedBox(height: 16),
           ],
         ),
       ),

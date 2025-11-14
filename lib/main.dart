@@ -3,10 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/welcome_screen.dart';
 import 'screens/home_screen.dart';
 import 'services/multiplayer/mock_multiplayer_service.dart';
+import 'services/audio_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
   // Inicializar serviço multiplayer
   MockMultiplayerService.initialize();
+  
+  // Inicializar serviço de áudio
+  await AudioService().initialize();
   
   runApp(const MyApp());
 }

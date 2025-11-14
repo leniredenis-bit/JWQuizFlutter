@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/question.dart';
+import '../services/audio_service.dart';
 
 class PieQuizScreen extends StatefulWidget {
   final List<Question> questions;
@@ -22,6 +23,19 @@ class _PieQuizScreenState extends State<PieQuizScreen> {
   bool _showAnswer = false;
   int? _currentRoundWinner; // null, 1 ou 2
 
+  @override
+  void initState() {
+    super.initState();
+    // Inicia música de fundo
+    AudioService().playBackgroundMusic('pie');
+  }
+
+  @override
+  void dispose() {
+    AudioService().stopBackgroundMusic();
+    super.dispose();
+  }
+
   Question get _currentQuestion => widget.questions[_currentQuestionIndex];
   bool get _isLastQuestion => _currentQuestionIndex == widget.questions.length - 1;
 
@@ -37,6 +51,9 @@ class _PieQuizScreenState extends State<PieQuizScreen> {
         // Se já marcou para este jogador, desmarca
         _currentRoundWinner = null;
       } else {
+        // Som de acerto ao marcar ponto
+        AudioService().playCorrectAnswer();
+        
         // Remove ponto do outro jogador se tiver
         if (_currentRoundWinner != null) {
           if (_currentRoundWinner == 1) {

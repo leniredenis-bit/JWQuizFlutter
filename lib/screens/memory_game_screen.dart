@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/stats_service.dart';
 import '../widgets/emoji_text.dart';
+import '../services/audio_service.dart';
 
 class MemoryGameScreen extends StatefulWidget {
   const MemoryGameScreen({Key? key}) : super(key: key);
@@ -230,12 +231,15 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   @override
   void initState() {
     super.initState();
+    // Inicia música de fundo
+    AudioService().playBackgroundMusic('memory');
     // Não inicia o jogo automaticamente - espera configuração
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    AudioService().stopBackgroundMusic();
     super.dispose();
   }
 
@@ -313,6 +317,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
     if (cards[index].isFlipped || cards[index].isMatched) return;
     if (flippedIndices.length >= 2) return;
 
+    // Som ao virar carta
+    AudioService().playCardFlip();
+
     setState(() {
       cards[index].isFlipped = true;
       flippedIndices.add(index);
@@ -336,6 +343,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
     if (card1.name == card2.name) {
       // Par encontrado!
+      // Som de acerto
+      AudioService().playMatch();
+      
       setState(() {
         card1.isMatched = true;
         card2.isMatched = true;
@@ -364,6 +374,8 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       // Verificar se o jogo terminou
       if (matches == totalPairs) {
         _timer?.cancel();
+        // Som de vitória
+        AudioService().playVictory();
         // Salvar estatísticas
         StatsService.saveMemoryGameStats(timeInSeconds: secondsElapsed);
         Future.delayed(Duration(milliseconds: 500), () {
@@ -372,6 +384,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
       }
     } else {
       // Não é par, virar de volta
+      // Som de erro
+      AudioService().playMismatch();
+      
       Future.delayed(Duration(milliseconds: 800), () {
         setState(() {
           card1.isFlipped = false;

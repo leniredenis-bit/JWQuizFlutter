@@ -7,6 +7,7 @@ import 'memory_game_screen.dart';
 import 'stats_screen.dart';
 import 'multiplayer/multiplayer_menu_screen.dart';
 import '../widgets/emoji_text.dart';
+import '../services/audio_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -27,6 +28,9 @@ class _HomeScreenState extends State<HomeScreen> {
     {'emoji': '🥧', 'title': 'Quiz Torta na Cara', 'desc': 'Duelo 1v1 local - quem errar perde!'},
     {'emoji': '🌐', 'title': 'Partida Online', 'desc': 'Jogue com amigos em tempo real!'},
     {'emoji': '🕹️', 'title': 'Jogo da Memória', 'desc': 'Encontre pares bíblicos!'},
+    {'emoji': '🎯', 'title': 'Em Breve...', 'desc': 'Novo minigame chegando!', 'disabled': 'true'},
+    {'emoji': '🎲', 'title': 'Em Breve...', 'desc': 'Novo minigame chegando!', 'disabled': 'true'},
+    {'emoji': '🎪', 'title': 'Em Breve...', 'desc': 'Novo minigame chegando!', 'disabled': 'true'},
     {'emoji': '📊', 'title': 'Estatísticas', 'desc': 'Veja seu desempenho e conquistas!'},
   ];
 
@@ -37,6 +41,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     loadTags();
+    // Inicia música de fundo da home
+    AudioService().playBackgroundMusic('home');
+  }
+
+  @override
+  void dispose() {
+    // Para música ao sair da tela
+    AudioService().stopBackgroundMusic();
+    super.dispose();
   }
 
   Future<void> loadTags() async {
@@ -127,13 +140,27 @@ class _HomeScreenState extends State<HomeScreen> {
             ...modes.asMap().entries.map((entry) {
               final index = entry.key;
               final mode = entry.value;
+              final bool isDisabled = mode['disabled'] == 'true';
               
               VoidCallback? onPressed;
-              if (index == 0) {
-                onPressed = startQuiz;
+              if (isDisabled) {
+                onPressed = () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('🎮 Novo minigame em desenvolvimento! Aguarde...'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                };
+              } else if (index == 0) {
+                onPressed = () {
+                  AudioService().playClick();
+                  startQuiz();
+                };
               } else if (index == 1) {
                 // Quiz Torta na Cara - Duelo 1v1
                 onPressed = () async {
+                  AudioService().playClick();
                   try {
                     List<Question> questions = await QuizService.loadQuestions();
                     
@@ -177,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 };
               } else if (index == 2) {
                 onPressed = () {
+                  AudioService().playClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => MultiplayerMenuScreen()),
@@ -184,13 +212,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 };
               } else if (index == 3) {
                 onPressed = () {
+                  AudioService().playClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => MemoryGameScreen()),
                   );
                 };
-              } else if (index == 4) {
+              } else if (index == 7) { // Estatísticas é agora o índice 7
                 onPressed = () {
+                  AudioService().playClick();
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => StatsScreen()),
@@ -202,24 +232,40 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF23395D),
+                    backgroundColor: isDisabled ? Color(0xFF1A2633) : Color(0xFF23395D),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                    elevation: 2,
+                    elevation: isDisabled ? 0 : 2,
                   ),
                   onPressed: onPressed,
                   child: Row(
                     children: [
-                      EmojiText(mode['emoji']!, size: 28),
+                      Opacity(
+                        opacity: isDisabled ? 0.4 : 1.0,
+                        child: EmojiText(mode['emoji']!, size: 28),
+                      ),
                       SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(mode['title']!, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                            Text(mode['desc']!, style: TextStyle(color: Colors.white70, fontSize: 13)),
+                            Text(
+                              mode['title']!, 
+                              style: TextStyle(
+                                color: isDisabled ? Colors.white38 : Colors.white, 
+                                fontWeight: FontWeight.bold, 
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              mode['desc']!, 
+                              style: TextStyle(
+                                color: isDisabled ? Colors.white24 : Colors.white70, 
+                                fontSize: 13,
+                              ),
+                            ),
                           ],
                         ),
                       ),

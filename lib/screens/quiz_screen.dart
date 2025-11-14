@@ -3,6 +3,7 @@ import 'dart:async';
 import '../models/question.dart';
 import '../models/stats_service.dart';
 import '../utils/timer_calculator.dart';
+import '../services/audio_service.dart';
 
 class QuizScreen extends StatefulWidget {
   final List<Question> questions;
@@ -28,6 +29,8 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
+    // Inicia música de fundo do quiz
+    AudioService().playBackgroundMusic('quiz');
     startTimer();
   }
 
@@ -35,6 +38,7 @@ class _QuizScreenState extends State<QuizScreen> {
   void dispose() {
     _timer?.cancel();
     _nextQuestionTimer?.cancel();
+    AudioService().stopBackgroundMusic();
     super.dispose();
   }
 
@@ -86,10 +90,15 @@ class _QuizScreenState extends State<QuizScreen> {
     _timer?.cancel();
 
     if (index == widget.questions[currentQuestionIndex].respostaCorreta) {
+      // Som de acerto!
+      AudioService().playCorrectAnswer();
       setState(() {
         score += calculatePoints();
         correctAnswersCount++;
       });
+    } else {
+      // Som de erro (buzina)
+      AudioService().playWrongAnswer();
     }
 
     // Inicia timer de auto-avanço (10s)

@@ -23,7 +23,7 @@ const RESOURCES = {"flutter.js": "24bc71911b75b5f8135c949e27a2984e",
 "assets/assets/audio/Life%2520of%2520Riley.mp3": "01124c4694817caf48d74752671f42b8",
 "assets/assets/audio/quiz.mp3": "3c6e02ac8dba37b45bd7b0be15b6f30a",
 "assets/assets/audio/home.mp3": "2e32bd1f9d068450cd53ce5933de1b57",
-"assets/assets/data/perguntas_atualizado.json": "5aded566696ce16ccff1510a579ec1d2",
+"assets/assets/data/perguntas_atualizado.json": "de81c907fc832628f319f904c65e6bd4",
 "assets/assets/data/MiniGa.txt": "495b3b68c636d0189582e9d1ed83e30f",
 "assets/fonts/MaterialIcons-Regular.otf": "aec566ed9da3046ca8dff44cc7d2fed8",
 "assets/NOTICES": "d1d82a393b2c08bcef8c229815b6b175",
@@ -44,9 +44,9 @@ const RESOURCES = {"flutter.js": "24bc71911b75b5f8135c949e27a2984e",
 "canvaskit/skwasm.js.symbols": "3a4aadf4e8141f284bd524976b1d6bdc",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "emoji-support.css": "3bda86717d37502b8d94a3bdecef20d6",
-"flutter_bootstrap.js": "b3119cf0a9a37f4a2dc7d99bcf321519",
+"flutter_bootstrap.js": "456e551d25ec3c12c9ef0ebf0427b040",
 "version.json": "1862db03a54f447da41b475b82598770",
-"main.dart.js": "364623362b6733fbe610f376e182569c"};
+"main.dart.js": "1d2a89377ac62ef97ad566aeba4f7fc2"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",

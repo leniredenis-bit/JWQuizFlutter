@@ -29,8 +29,23 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
+  <!-- Fonte Noto Color Emoji para garantir emojis coloridos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+  
+  <!-- CSS customizado para suporte a emojis -->
+  <link rel="stylesheet" type="text/css" href="emoji-support.css">
+
   <title>jw_quiz_flutter</title>
   <link rel="manifest" href="manifest.json">
+  
+  <style>
+    /* Garantir que emojis usem a fonte correta */
+    body {
+      font-family: 'Roboto', 'Noto Color Emoji', sans-serif;
+    }
+  </style>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

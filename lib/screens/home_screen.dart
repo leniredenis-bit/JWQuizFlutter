@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Color(0xFF162447),
         elevation: 0,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,21 +153,28 @@ class _HomeScreenState extends State<HomeScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: displayedTags.map((tag) => FilterChip(
-                        label: Text(tag),
-                        selected: selectedTag == tag,
-                        backgroundColor: Color(0xFF23395D),
-                        selectedColor: Color(0xFF3A5A8C),
-                        labelStyle: TextStyle(color: Colors.white),
-                        onSelected: (selected) {
-                          setState(() {
-                            selectedTag = selected ? tag : null;
-                          });
-                        },
-                      )).toList(),
+                    Container(
+                      constraints: BoxConstraints(
+                        maxHeight: showAllTags ? 300 : double.infinity,
+                      ),
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: displayedTags.map((tag) => FilterChip(
+                            label: Text(tag),
+                            selected: selectedTag == tag,
+                            backgroundColor: Color(0xFF23395D),
+                            selectedColor: Color(0xFF3A5A8C),
+                            labelStyle: TextStyle(color: Colors.white),
+                            onSelected: (selected) {
+                              setState(() {
+                                selectedTag = selected ? tag : null;
+                              });
+                            },
+                          )).toList(),
+                        ),
+                      ),
                     ),
                     if (allTags.length > initialTagsCount)
                       Padding(

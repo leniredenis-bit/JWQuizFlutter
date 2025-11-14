@@ -2,22 +2,22 @@ import '../models/question.dart';
 
 /// Utilitário para calcular tempo de leitura de perguntas
 class TimerCalculator {
-  // Velocidade média de leitura: 3 palavras por segundo (180 palavras/minuto)
-  static const double _wordsPerSecond = 3.0;
+  // Velocidade média de leitura: 2 palavras por segundo
+  static const double _wordsPerSecond = 2.0;
   
   /// Calcula tempo de leitura para o Quiz normal (single player)
-  /// Fórmula: (palavras / 3) + 7 segundos base
+  /// Fórmula: (palavras / 2) + 10 segundos base
   static int calculateQuizTime(Question question) {
     final totalWords = _countWords(question);
     final readingTime = (totalWords / _wordsPerSecond).ceil();
-    final timeWithBuffer = readingTime + 7;
+    final timeWithBuffer = readingTime + 10;
     
     // Mínimo de 10 segundos, máximo de 60
     return timeWithBuffer.clamp(10, 60);
   }
   
   /// Calcula tempo de leitura para o Multiplayer Online
-  /// Fórmula: (palavras / 3) + 20 segundos base (para latência de rede)
+  /// Fórmula: (palavras / 2) + 20 segundos base (para latência de rede)
   static int calculateMultiplayerTime(Question question) {
     final totalWords = _countWords(question);
     final readingTime = (totalWords / _wordsPerSecond).ceil();

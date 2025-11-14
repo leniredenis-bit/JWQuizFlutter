@@ -49,8 +49,14 @@ class _QuizScreenState extends State<QuizScreen> {
         setState(() {
           timeRemaining--;
         });
-      } else if (timeRemaining <= 0 && !showExplanation) {
-        nextQuestion();
+      } else if (timeRemaining <= 0 && !showExplanation && selectedAnswer == null) {
+        // Tempo esgotado sem resposta - marcar a resposta certa
+        setState(() {
+          selectedAnswer = widget.questions[currentQuestionIndex].respostaCorreta;
+          showResult = true;
+        });
+        _timer?.cancel();
+        startAutoAdvanceTimer();
       }
     });
   }
@@ -138,48 +144,43 @@ class _QuizScreenState extends State<QuizScreen> {
     );
     
     if (!mounted) return;
+    
+    // Calcular porcentagem de acertos
+    final percentage = (correctAnswersCount / widget.questions.length * 100).round();
+    
+    // Escolher emoji e mensagem baseado no desempenho
+    String emoji;
+    String message;
+    Color celebrationColor;
+    
+    if (percentage >= 90) {
+      emoji = '🏆';
+      message = 'Excelente!';
+      celebrationColor = Colors.amber;
+    } else if (percentage >= 70) {
+      emoji = '🎉';
+      message = 'Muito Bem!';
+      celebrationColor = Colors.green;
+    } else if (percentage >= 50) {
+      emoji = '👏';
+      message = 'Bom Trabalho!';
+      celebrationColor = Colors.blue;
+    } else {
+      emoji = '💪';
+      message = 'Continue Praticando!';
+      celebrationColor = Colors.orange;
+    }
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF162447),
-        title: Text(
-          '🎉 Quiz Finalizado!',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Pontuação Final',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '$score',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 48,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Você acertou $correctAnswersCount de ${widget.questions.length} perguntas!',
-              style: TextStyle(color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text('Voltar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+      builder: (context) => _AnimatedResultDialog(
+        emoji: emoji,
+        message: message,
+        score: score,
+        correctAnswers: correctAnswersCount,
+        totalQuestions: widget.questions.length,
+        celebrationColor: celebrationColor,
       ),
     );
   }
@@ -215,18 +216,7 @@ class _QuizScreenState extends State<QuizScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Dificuldade (sem timer aqui)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Chip(
-                      label: Text(question.getDificuldadeTexto()),
-                      backgroundColor: Color(0xFF23395D),
-                      labelStyle: TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 16),
+                SizedBox(height: 8),
                 
                 // Balão da Pergunta com Timer no canto superior direito
                 Container(
@@ -238,17 +228,31 @@ class _QuizScreenState extends State<QuizScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Linha com ID e Timer
+                      // Linha com ID, Dificuldade e Timer
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Pergunta #${question.id}',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w300,
-                            ),
+                          // ID e Dificuldade
+                          Row(
+                            children: [
+                              Text(
+                                'Pergunta #${question.id}',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w300,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                question.getDificuldadeTexto(),
+                                style: TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                           // Timer (só aparece se não está no modo estudo)
                           Container(
@@ -377,8 +381,6 @@ class _QuizScreenState extends State<QuizScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Text('➡️', style: TextStyle(fontSize: 18)),
                           ],
                         ),
                       ),
@@ -516,8 +518,6 @@ class _QuizScreenState extends State<QuizScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              SizedBox(width: 8),
-                              Text('➡️', style: TextStyle(fontSize: 18)),
                             ],
                           ),
                         ),
@@ -534,3 +534,257 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 }
+
+// Widget de diálogo animado para resultados
+class _AnimatedResultDialog extends StatefulWidget {
+  final String emoji;
+  final String message;
+  final int score;
+  final int correctAnswers;
+  final int totalQuestions;
+  final Color celebrationColor;
+
+  const _AnimatedResultDialog({
+    required this.emoji,
+    required this.message,
+    required this.score,
+    required this.correctAnswers,
+    required this.totalQuestions,
+    required this.celebrationColor,
+  });
+
+  @override
+  State<_AnimatedResultDialog> createState() => _AnimatedResultDialogState();
+}
+
+class _AnimatedResultDialogState extends State<_AnimatedResultDialog>
+    with TickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late AnimationController _rotateController;
+  late AnimationController _slideController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _rotateAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Animação de escala (emoji pulando)
+    _scaleController = AnimationController(
+      duration: Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+
+    // Animação de rotação (emoji girando)
+    _rotateController = AnimationController(
+      duration: Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
+      CurvedAnimation(parent: _rotateController, curve: Curves.easeInOut),
+    );
+
+    // Animação de slide (conteúdo deslizando)
+    _slideController = AnimationController(
+      duration: Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
+
+    // Iniciar animações
+    _scaleController.forward();
+    Future.delayed(Duration(milliseconds: 200), () {
+      if (mounted) _rotateController.forward();
+    });
+    Future.delayed(Duration(milliseconds: 400), () {
+      if (mounted) _slideController.forward();
+    });
+
+    // Loop de rotação sutil
+    _rotateController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _rotateController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _rotateController.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    _rotateController.dispose();
+    _slideController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage = (widget.correctAnswers / widget.totalQuestions * 100).round();
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Color(0xFF162447),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: widget.celebrationColor.withOpacity(0.3),
+              blurRadius: 20,
+              spreadRadius: 5,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emoji animado
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: RotationTransition(
+                turns: _rotateAnimation,
+                child: Text(
+                  widget.emoji,
+                  style: TextStyle(fontSize: 80),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+
+            // Conteúdo deslizante
+            SlideTransition(
+              position: _slideAnimation,
+              child: Column(
+                children: [
+                  // Mensagem
+                  Text(
+                    widget.message,
+                    style: TextStyle(
+                      color: widget.celebrationColor,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Quiz Finalizado!',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+
+                  // Pontuação
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF23395D),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Pontuação',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TweenAnimationBuilder<int>(
+                          tween: IntTween(begin: 0, end: widget.score),
+                          duration: Duration(milliseconds: 1500),
+                          builder: (context, value, child) {
+                            return Text(
+                              '$value',
+                              style: TextStyle(
+                                color: widget.celebrationColor,
+                                fontSize: 56,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16),
+
+                  // Estatísticas
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStat('Acertos', '${widget.correctAnswers}/${widget.totalQuestions}', Colors.green),
+                      _buildStat('Aproveitamento', '$percentage%', widget.celebrationColor),
+                    ],
+                  ),
+                  SizedBox(height: 24),
+
+                  // Botão
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.celebrationColor,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Voltar ao Menu',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStat(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+}
+

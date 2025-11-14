@@ -555,10 +555,10 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
         });
       },
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Color(0xFF23395D) : Color(0xFF162447),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Color(0xFF23395D) : Color(0xFF101A2C),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? Colors.amber : Colors.transparent,
             width: 2,
@@ -570,16 +570,16 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
               label,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
-            SizedBox(height: 4),
+            SizedBox(height: 2),
             Text(
               subtitle,
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
           ],
@@ -588,7 +588,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
     );
   }
 
-  Widget _buildPlayerButton(int players, String emoji) {
+  Widget _buildPlayerButton(int players, String label) {
     bool isSelected = numPlayers == players;
     return GestureDetector(
       onTap: () {
@@ -597,10 +597,10 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
         });
       },
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Color(0xFF23395D) : Color(0xFF162447),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? Color(0xFF23395D) : Color(0xFF101A2C),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isSelected ? Colors.amber : Colors.transparent,
             width: 2,
@@ -609,16 +609,19 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
         child: Column(
           children: [
             Text(
-              emoji,
-              style: TextStyle(fontSize: 28),
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 4),
+            SizedBox(height: 2),
             Text(
               players == 1 ? 'Solo' : '$players jogadores',
               style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: Colors.white70,
+                fontSize: 11,
               ),
             ),
           ],
@@ -643,118 +646,160 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Seleção de Tema
-              Text(
-                'Tema',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              // Seleção de Tema (Expansível)
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF162447),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-              SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  'animais',
-                  'frutas',
-                  'transportes',
-                  'peixes',
-                  'aves',
-                  'numeros',
-                  'objetos',
-                  'natureza',
-                  'todos',
-                ].map((theme) {
-                  bool isSelected = selectedTheme == theme;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedTheme = theme;
-                      });
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? Color(0xFF23395D) : Color(0xFF162447),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? Colors.amber : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                      child: Text(
-                        MemoryThemes.getThemeDisplayName(theme),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
+                child: ExpansionTile(
+                  title: Text(
+                    'Tema: ${MemoryThemes.getThemeDisplayName(selectedTheme)}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  iconColor: Colors.white,
+                  collapsedIconColor: Colors.white70,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          'animais',
+                          'frutas',
+                          'transportes',
+                          'peixes',
+                          'aves',
+                          'numeros',
+                          'objetos',
+                          'natureza',
+                          'todos',
+                        ].map((theme) {
+                          bool isSelected = selectedTheme == theme;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedTheme = theme;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isSelected ? Color(0xFF23395D) : Color(0xFF101A2C),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: isSelected ? Colors.amber : Colors.transparent,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Text(
+                                MemoryThemes.getThemeDisplayName(theme),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 32),
-              
-              // Seleção de Dificuldade
-              Text(
-                'Dificuldade',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
               ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDifficultyButton('facil', '😊 Fácil', '6 pares'),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDifficultyButton('medio', '😐 Médio', '10 pares'),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDifficultyButton('dificil', '😰 Difícil', '15 pares'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 32),
+              SizedBox(height: 16),
               
-              // Seleção de Jogadores
-              Text(
-                'Jogadores',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              // Seleção de Dificuldade (Expansível)
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF162447),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ExpansionTile(
+                  title: Text(
+                    'Dificuldade: ${selectedDifficulty == "facil" ? "Fácil (6 pares)" : selectedDifficulty == "medio" ? "Médio (10 pares)" : "Difícil (15 pares)"}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  iconColor: Colors.white,
+                  collapsedIconColor: Colors.white70,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildDifficultyButton('facil', 'Fácil', '6 pares'),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDifficultyButton('medio', 'Médio', '10 pares'),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildDifficultyButton('dificil', 'Difícil', '15 pares'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildPlayerButton(1, '1️⃣'),
+              SizedBox(height: 16),
+              
+              // Seleção de Jogadores (Expansível)
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF162447),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ExpansionTile(
+                  title: Text(
+                    'Jogadores: ${numPlayers == 1 ? "Solo" : "$numPlayers jogadores"}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPlayerButton(2, '2️⃣'),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPlayerButton(3, '3️⃣'),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _buildPlayerButton(4, '4️⃣'),
-                  ),
-                ],
+                  iconColor: Colors.white,
+                  collapsedIconColor: Colors.white70,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildPlayerButton(1, '1'),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildPlayerButton(2, '2'),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildPlayerButton(3, '3'),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: _buildPlayerButton(4, '4'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 48),
+              SizedBox(height: 32),
               
               // Botão Iniciar
               ElevatedButton(
@@ -801,12 +846,21 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
     // Calcular tamanho da grade baseado no número de cartas
     int crossAxisCount;
+    double emojiSize;
+    double fontSize;
+    
     if (cards.length <= 12) {
-      crossAxisCount = 3; // 3x4 para fácil
+      crossAxisCount = 4; // 4x3 para fácil (melhor proporção)
+      emojiSize = 48;
+      fontSize = 12;
     } else if (cards.length <= 20) {
       crossAxisCount = 4; // 4x5 para médio
+      emojiSize = 42;
+      fontSize = 11;
     } else {
       crossAxisCount = 5; // 5x6 para difícil
+      emojiSize = 36;
+      fontSize = 10;
     }
 
     return Scaffold(
@@ -843,29 +897,36 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: List.generate(numPlayers, (i) {
-                          return Column(
-                            children: [
-                              Text(
-                                i == currentPlayer ? '👉' : '  ',
-                                style: TextStyle(fontSize: 16),
+                          bool isActive = i == currentPlayer;
+                          return Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: isActive ? BoxDecoration(
+                              border: Border.all(
+                                color: Colors.amber,
+                                width: 2,
                               ),
-                              Text(
-                                'J${i + 1}',
-                                style: TextStyle(
-                                  color: i == currentPlayer ? Colors.amber : Colors.white70,
-                                  fontSize: 16,
-                                  fontWeight: i == currentPlayer ? FontWeight.bold : FontWeight.normal,
+                              borderRadius: BorderRadius.circular(8),
+                            ) : null,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'J${i + 1}',
+                                  style: TextStyle(
+                                    color: isActive ? Colors.amber : Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '${playerScores[i]}',
-                                style: TextStyle(
-                                  color: i == currentPlayer ? Colors.amber : Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                Text(
+                                  '${playerScores[i]}',
+                                  style: TextStyle(
+                                    color: isActive ? Colors.amber : Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           );
                         }),
                       ),
@@ -1006,7 +1067,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
                                 children: [
                                   Text(
                                     card.emoji,
-                                    style: TextStyle(fontSize: 32),
+                                    style: TextStyle(fontSize: emojiSize),
                                   ),
                                   SizedBox(height: 4),
                                   Padding(
@@ -1015,7 +1076,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
                                       card.name,
                                       style: TextStyle(
                                         color: Colors.white,
-                                        fontSize: 10,
+                                        fontSize: fontSize,
                                         fontWeight: FontWeight.bold,
                                       ),
                                       textAlign: TextAlign.center,
@@ -1028,7 +1089,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
                             : Icon(
                                 Icons.question_mark,
                                 color: Colors.white54,
-                                size: 32,
+                                size: emojiSize * 0.8,
                               ),
                       ),
                     ),

@@ -15,23 +15,29 @@ class StatsService {
     required int questionsAnswered,
     required int correctAnswers,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Atualizar totais
-    final totalQuizzes = (prefs.getInt(_keyTotalQuizzes) ?? 0) + 1;
-    final totalScore = (prefs.getInt(_keyTotalScore) ?? 0) + score;
-    final totalQuestions = (prefs.getInt(_keyTotalQuestions) ?? 0) + questionsAnswered;
-    final totalCorrect = (prefs.getInt(_keyCorrectAnswers) ?? 0) + correctAnswers;
-    final bestScore = prefs.getInt(_keyBestScore) ?? 0;
-    
-    await prefs.setInt(_keyTotalQuizzes, totalQuizzes);
-    await prefs.setInt(_keyTotalScore, totalScore);
-    await prefs.setInt(_keyTotalQuestions, totalQuestions);
-    await prefs.setInt(_keyCorrectAnswers, totalCorrect);
-    
-    // Atualizar melhor score se necessário
-    if (score > bestScore) {
-      await prefs.setInt(_keyBestScore, score);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Atualizar totais
+      final totalQuizzes = (prefs.getInt(_keyTotalQuizzes) ?? 0) + 1;
+      final totalScore = (prefs.getInt(_keyTotalScore) ?? 0) + score;
+      final totalQuestions = (prefs.getInt(_keyTotalQuestions) ?? 0) + questionsAnswered;
+      final totalCorrect = (prefs.getInt(_keyCorrectAnswers) ?? 0) + correctAnswers;
+      final bestScore = prefs.getInt(_keyBestScore) ?? 0;
+      
+      await prefs.setInt(_keyTotalQuizzes, totalQuizzes);
+      await prefs.setInt(_keyTotalScore, totalScore);
+      await prefs.setInt(_keyTotalQuestions, totalQuestions);
+      await prefs.setInt(_keyCorrectAnswers, totalCorrect);
+      
+      // Atualizar melhor score se necessário
+      if (score > bestScore) {
+        await prefs.setInt(_keyBestScore, score);
+      }
+      
+      print('✅ Estatísticas salvas com sucesso!');
+    } catch (e) {
+      print('⚠️ Erro ao salvar estatísticas (pode ser limitação do navegador): $e');
     }
   }
 
@@ -39,32 +45,52 @@ class StatsService {
   static Future<void> saveMemoryGameStats({
     required int timeInSeconds,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    final gamesPlayed = (prefs.getInt(_keyMemoryGamesPlayed) ?? 0) + 1;
-    final bestTime = prefs.getInt(_keyBestMemoryTime) ?? 0;
-    
-    await prefs.setInt(_keyMemoryGamesPlayed, gamesPlayed);
-    
-    // Atualizar melhor tempo se for menor (ou se for o primeiro)
-    if (bestTime == 0 || timeInSeconds < bestTime) {
-      await prefs.setInt(_keyBestMemoryTime, timeInSeconds);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final gamesPlayed = (prefs.getInt(_keyMemoryGamesPlayed) ?? 0) + 1;
+      final bestTime = prefs.getInt(_keyBestMemoryTime) ?? 0;
+      
+      await prefs.setInt(_keyMemoryGamesPlayed, gamesPlayed);
+      
+      // Atualizar melhor tempo se for menor (ou se for o primeiro)
+      if (bestTime == 0 || timeInSeconds < bestTime) {
+        await prefs.setInt(_keyBestMemoryTime, timeInSeconds);
+      }
+      
+      print('✅ Estatísticas do jogo da memória salvas!');
+    } catch (e) {
+      print('⚠️ Erro ao salvar estatísticas da memória: $e');
     }
   }
 
   // Carregar todas as estatísticas
   static Future<Map<String, int>> loadAllStats() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    return {
-      'totalQuizzes': prefs.getInt(_keyTotalQuizzes) ?? 0,
-      'totalScore': prefs.getInt(_keyTotalScore) ?? 0,
-      'totalQuestions': prefs.getInt(_keyTotalQuestions) ?? 0,
-      'correctAnswers': prefs.getInt(_keyCorrectAnswers) ?? 0,
-      'bestScore': prefs.getInt(_keyBestScore) ?? 0,
-      'memoryGamesPlayed': prefs.getInt(_keyMemoryGamesPlayed) ?? 0,
-      'bestMemoryTime': prefs.getInt(_keyBestMemoryTime) ?? 0,
-    };
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      return {
+        'totalQuizzes': prefs.getInt(_keyTotalQuizzes) ?? 0,
+        'totalScore': prefs.getInt(_keyTotalScore) ?? 0,
+        'totalQuestions': prefs.getInt(_keyTotalQuestions) ?? 0,
+        'correctAnswers': prefs.getInt(_keyCorrectAnswers) ?? 0,
+        'bestScore': prefs.getInt(_keyBestScore) ?? 0,
+        'memoryGamesPlayed': prefs.getInt(_keyMemoryGamesPlayed) ?? 0,
+        'bestMemoryTime': prefs.getInt(_keyBestMemoryTime) ?? 0,
+      };
+    } catch (e) {
+      print('⚠️ Erro ao carregar estatísticas: $e');
+      // Retorna valores padrão em caso de erro
+      return {
+        'totalQuizzes': 0,
+        'totalScore': 0,
+        'totalQuestions': 0,
+        'correctAnswers': 0,
+        'bestScore': 0,
+        'memoryGamesPlayed': 0,
+        'bestMemoryTime': 0,
+      };
+    }
   }
 
   // Resetar todas as estatísticas

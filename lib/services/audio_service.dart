@@ -13,6 +13,7 @@ class AudioService {
 
   bool _isMusicEnabled = true;
   bool _isSfxEnabled = true;
+  bool _isInitialized = false;
   String? _currentMusic;
 
   // Músicas disponíveis por tela
@@ -35,6 +36,8 @@ class AudioService {
 
   /// Inicializa o serviço de áudio
   Future<void> initialize() async {
+    if (_isInitialized) return;
+    
     // Configura o player de música para loop
     await _musicPlayer.setReleaseMode(ReleaseMode.loop);
     await _musicPlayer.setVolume(0.4); // Volume mais baixo para música de fundo
@@ -42,11 +45,14 @@ class AudioService {
     // Configura o player de efeitos sonoros
     await _sfxPlayer.setReleaseMode(ReleaseMode.stop);
     await _sfxPlayer.setVolume(0.7);
+    
+    _isInitialized = true;
   }
 
   /// Toca música de fundo para uma tela específica (escolhe aleatoriamente)
+  /// IMPORTANTE: No Flutter Web, só funciona após interação do usuário
   Future<void> playBackgroundMusic(String screen) async {
-    if (!_isMusicEnabled) return;
+    if (!_isMusicEnabled || !_isInitialized) return;
 
     final musicList = _backgroundMusic[screen];
     if (musicList == null || musicList.isEmpty) return;
@@ -63,7 +69,9 @@ class AudioService {
       await _musicPlayer.stop();
       await _musicPlayer.play(AssetSource(randomMusic.replaceFirst('assets/', '')));
     } catch (e) {
-      print('Erro ao tocar música: $e');
+      // No Flutter Web, autoplay pode ser bloqueado pelo navegador
+      // Isso é esperado - o áudio só tocará após primeira interação
+      print('Aviso: Música de fundo requer interação do usuário primeiro (Web)');
     }
   }
 
@@ -90,6 +98,11 @@ class AudioService {
   Future<void> _playSfx(String assetPath) async {
     if (!_isSfxEnabled) return;
     
+    // TODO: Adicionar arquivos de SFX reais
+    // Por enquanto, desabilitado para evitar erros 404
+    return;
+    
+    /*
     try {
       await _sfxPlayer.stop(); // Para o som anterior
       await _sfxPlayer.play(AssetSource(assetPath.replaceFirst('assets/', '')));
@@ -97,6 +110,7 @@ class AudioService {
       // Se o arquivo não existe, ignora silenciosamente
       print('SFX não encontrado: $assetPath');
     }
+    */
   }
 
   /// Som ao virar carta no jogo da memória

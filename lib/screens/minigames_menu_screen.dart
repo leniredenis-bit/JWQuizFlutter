@@ -16,44 +16,63 @@ class MinigamesMenuScreen extends StatelessWidget {
       'title': 'Jogo da Velha',
       'desc': 'Duelo 2 jogadores ou vs IA!',
       'color': Color(0xFF4A90E2),
-      'screen': TicTacToeGame,
+      'screen': 'TicTacToeGame',
     },
     {
       'emoji': '🎯',
       'title': 'Forca',
       'desc': 'Adivinhe a palavra bíblica!',
       'color': Color(0xFFE24A4A),
-      'screen': HangmanGame,
+      'screen': 'HangmanGame',
     },
     {
       'emoji': '🔍',
       'title': 'Caça-Palavras',
       'desc': 'Encontre palavras escondidas!',
       'color': Color(0xFF50C878),
-      'screen': WordSearchGame,
+      'screen': 'WordSearchGame',
     },
     {
       'emoji': '🧩',
       'title': 'Labirinto',
       'desc': 'Encontre a saída!',
       'color': Color(0xFFFF9500),
-      'screen': MazeGame,
+      'screen': 'MazeGame',
     },
     {
       'emoji': '🎨',
       'title': 'Sequência Rápida',
       'desc': 'Memorize o padrão de cores!',
       'color': Color(0xFF9B59B6),
-      'screen': SequenceGame,
+      'screen': 'SequenceGame',
     },
     {
       'emoji': '🧩',
       'title': 'Quebra-Cabeça',
       'desc': 'Monte a imagem completa!',
       'color': Color(0xFF3498DB),
-      'screen': PuzzleGame,
+      'screen': 'PuzzleGame',
     },
   ];
+
+  Widget _getGameScreen(String screenName) {
+    switch (screenName) {
+      case 'TicTacToeGame':
+        return const TicTacToeGame();
+      case 'HangmanGame':
+        return const HangmanGame();
+      case 'WordSearchGame':
+        return const WordSearchGame();
+      case 'MazeGame':
+        return const MazeGame();
+      case 'SequenceGame':
+        return const SequenceGame();
+      case 'PuzzleGame':
+        return const PuzzleGame();
+      default:
+        return const TicTacToeGame();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,7 +108,7 @@ class MinigamesMenuScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => game['screen'](),
+                    builder: (context) => _getGameScreen(game['screen'] as String),
                   ),
                 );
               },

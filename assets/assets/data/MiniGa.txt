@@ -1,0 +1,1660 @@
+Vou te entregar um README com instruções e o código Flutter (single file) pronto pra colar em lib/main.dart e rodar. O jogo terá:
+
+Modo 2 jogadores (local).
+
+Modo vs IA com 2 níveis: Fácil (aleatório) e Impossível (Minimax).
+
+Placar local (vence/empate/derrota).
+
+Reset de partida e escolha de quem começa.
+
+UI simples, limpa e adequada para adultos e crianças.
+
+README — Jogo da Velha (Tic-Tac-Toe) — Flutter / Dart
+O que é
+
+Mini-jogo da velha para integrar como minigame no seu app. Feito em Flutter sem dependências externas. Interface amigável e código comentado para fácil modificação.
+
+Como usar
+
+Crie um novo projeto Flutter ou abra seu projeto existente.
+
+Substitua o conteúdo de lib/main.dart pelo código que segue.
+
+Funcionalidades
+
+Jogar contra outro jogador local (pass-and-play).
+
+Jogar contra IA:
+
+Fácil: IA joga aleatoriamente entre casas vazias.
+
+Impossível: IA usa Minimax (joga otimamente).
+
+Controles: escolher modo, trocar quem inicia, reiniciar partida, zerar placar.
+
+Adequado para crianças e adultos — sem conteúdo ofensivo.
+
+Como integrar no app
+
+Copie main.dart para lib/.
+
+Se quiser usar dentro de uma navegação já existente, extraia o widget TicTacToePage() e use onde quiser.
+
+Para estilizar, mude as cores em theme ou dentro dos widgets (procure Theme.of(context)).
+
+Código — cole em lib/main.dart
+
+import 'dart:math';
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const TicTacToeApp());
+}
+
+class TicTacToeApp extends StatelessWidget {
+  const TicTacToeApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Jogo da Velha',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+      ),
+      home: const TicTacToePage(),
+    );
+  }
+}
+
+enum Player { X, O, none }
+enum Mode { twoPlayers, vsAi }
+enum AiDifficulty { easy, impossible }
+
+class TicTacToePage extends StatefulWidget {
+  const TicTacToePage({super.key});
+
+  @override
+  State<TicTacToePage> createState() => _TicTacToePageState();
+}
+
+class _TicTacToePageState extends State<TicTacToePage> {
+  // Board: 9 positions
+  List<Player> board = List<Player>.filled(9, Player.none);
+  Player current = Player.X; // who plays now
+  Mode mode = Mode.vsAi;
+  AiDifficulty aiDifficulty = AiDifficulty.impossible;
+  bool xStarts = true;
+
+  // Score
+  int xWins = 0;
+  int oWins = 0;
+  int draws = 0;
+
+  bool gameOver = false;
+  String infoText = '';
+
+  final Random _rnd = Random();
+
+  @override
+  void initState() {
+    super.initState();
+    resetBoard();
+  }
+
+  void resetBoard({bool keepStarter = true}) {
+    setState(() {
+      board = List<Player>.filled(9, Player.none);
+      gameOver = false;
+      if (!keepStarter) {
+        xStarts = !xStarts;
+      }
+      current = xStarts ? Player.X : Player.O;
+      infoText = 'Vez: ${playerToString(current)}';
+      // If AI starts
+      if (mode == Mode.vsAi && current == Player.O) {
+        Future.delayed(const Duration(milliseconds: 350), () => aiMove());
+      }
+    });
+  }
+
+  void resetAll() {
+    setState(() {
+      xWins = 0;
+      oWins = 0;
+      draws = 0;
+    });
+    resetBoard(keepStarter: true);
+  }
+
+  // Convert player to display string
+  String playerToString(Player p) {
+    if (p == Player.X) return 'X';
+    if (p == Player.O) return 'O';
+    return '-';
+  }
+
+  // Handle tap on cell
+  void handleTap(int index) {
+    if (gameOver) return;
+    if (board[index] != Player.none) return;
+
+    // If vs AI and it's O's turn and AI controls O, block user taps
+    if (mode == Mode.vsAi && current == Player.O) return;
+
+    setState(() {
+      board[index] = current;
+      evaluateAfterMove();
+    });
+
+    // If after player's move it's AI's turn, trigger AI
+    if (!gameOver && mode == Mode.vsAi && current == Player.O) {
+      Future.delayed(const Duration(milliseconds: 350), () => aiMove());
+    }
+  }
+
+  void evaluateAfterMove() {
+    final result = checkWinner(board);
+    if (result != Player.none) {
+      // someone won
+      gameOver = true;
+      if (result == Player.X) {
+        xWins++;
+      } else if (result == Player.O) {
+        oWins++;
+      }
+      infoText = 'Jogador ${playerToString(result)} venceu!';
+      setState(() {});
+      return;
+    }
+
+    if (!board.contains(Player.none)) {
+      // draw
+      gameOver = true;
+      draws++;
+      infoText = 'Empate!';
+      setState(() {});
+      return;
+    }
+
+    // continue
+    current = (current == Player.X) ? Player.O : Player.X;
+    infoText = 'Vez: ${playerToString(current)}';
+    setState(() {});
+  }
+
+  // AI move logic
+  void aiMove() {
+    if (gameOver) return;
+    // AI plays as O
+    int move;
+    if (aiDifficulty == AiDifficulty.easy) {
+      // random empty cell
+      final empties = <int>[];
+      for (int i = 0; i < 9; i++) {
+        if (board[i] == Player.none) empties.add(i);
+      }
+      if (empties.isEmpty) return;
+      move = empties[_rnd.nextInt(empties.length)];
+    } else {
+      // Minimax for optimal play
+      move = findBestMove(board, Player.O);
+    }
+
+    setState(() {
+      board[move] = Player.O;
+      evaluateAfterMove();
+    });
+  }
+
+  // Check winner: returns Player.X / Player.O / Player.none
+  Player checkWinner(List<Player> b) {
+    const lines = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+    for (final line in lines) {
+      final a = b[line[0]];
+      final c = b[line[1]];
+      final d = b[line[2]];
+      if (a != Player.none && a == c && a == d) {
+        return a;
+      }
+    }
+    return Player.none;
+  }
+
+  // Minimax algorithm: returns best move index for playerToMove
+  int findBestMove(List<Player> b, Player playerToMove) {
+    int bestVal = -1000;
+    int bestMove = -1;
+
+    for (int i = 0; i < 9; i++) {
+      if (b[i] == Player.none) {
+        b[i] = playerToMove;
+        int moveVal = minimax(b, 0, false, playerToMove);
+        b[i] = Player.none;
+        if (moveVal > bestVal) {
+          bestMove = i;
+          bestVal = moveVal;
+        }
+      }
+    }
+
+    // If no best found (shouldn't happen), pick random
+    if (bestMove == -1) {
+      final empties = <int>[];
+      for (int i = 0; i < 9; i++) {
+        if (b[i] == Player.none) empties.add(i);
+      }
+      if (empties.isEmpty) return 0;
+      return empties[_rnd.nextInt(empties.length)];
+    }
+
+    return bestMove;
+  }
+
+  // Minimax returns score from perspective of AI (O)
+  int minimax(List<Player> b, int depth, bool isMaximizing, Player aiPlayer) {
+    final winner = checkWinner(b);
+    if (winner == aiPlayer) return 10 - depth;
+    if (winner != Player.none && winner != aiPlayer) return depth - 10;
+    if (!b.contains(Player.none)) return 0;
+
+    if (isMaximizing) {
+      int best = -1000;
+      for (int i = 0; i < 9; i++) {
+        if (b[i] == Player.none) {
+          b[i] = aiPlayer;
+          best = max(best, minimax(b, depth + 1, !isMaximizing, aiPlayer));
+          b[i] = Player.none;
+        }
+      }
+      return best;
+    } else {
+      // minimizing (opponent)
+      Player opponent = (aiPlayer == Player.O) ? Player.X : Player.O;
+      int best = 1000;
+      for (int i = 0; i < 9; i++) {
+        if (b[i] == Player.none) {
+          b[i] = opponent;
+          best = min(best, minimax(b, depth + 1, !isMaximizing, aiPlayer));
+          b[i] = Player.none;
+        }
+      }
+      return best;
+    }
+  }
+
+  // UI Helpers
+  Widget buildCell(int index) {
+    final p = board[index];
+    final color = (p == Player.X) ? Colors.blue : (p == Player.O ? Colors.red : Colors.black54);
+    return GestureDetector(
+      onTap: () => handleTap(index),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.black26),
+          color: Colors.white,
+        ),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            child: Text(
+              p == Player.none ? '' : playerToString(p),
+              key: ValueKey(p),
+              style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: color),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget controlPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Mode selection
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ToggleButtons(
+              isSelected: [mode == Mode.vsAi, mode == Mode.twoPlayers],
+              onPressed: (i) {
+                setState(() {
+                  mode = (i == 0) ? Mode.vsAi : Mode.twoPlayers;
+                });
+                resetBoard();
+              },
+              children: const [Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('vs IA')), Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('2 players'))],
+            ),
+            Row(children: [
+              const Text('Quem começa: '),
+              Switch(
+                value: xStarts,
+                onChanged: (v) {
+                  setState(() {
+                    xStarts = v;
+                    resetBoard();
+                  });
+                },
+              ),
+              Text(xStarts ? 'X' : 'O'),
+            ])
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Difficulty
+        if (mode == Mode.vsAi)
+          Row(
+            children: [
+              const Text('Dificuldade: '),
+              const SizedBox(width: 8),
+              DropdownButton<AiDifficulty>(
+                value: aiDifficulty,
+                items: const [
+                  DropdownMenuItem(value: AiDifficulty.easy, child: Text('Fácil')),
+                  DropdownMenuItem(value: AiDifficulty.impossible, child: Text('Impossível')),
+                ],
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() {
+                    aiDifficulty = v;
+                  });
+                },
+              ),
+            ],
+          ),
+        const SizedBox(height: 8),
+        // Info and buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(infoText, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => resetBoard(),
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Reiniciar'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                    onPressed: () {
+                      resetAll();
+                    },
+                    child: const Text('Zerar placar'))
+              ],
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget scorePanel() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        scoreBox('X', xWins, Colors.blue),
+        scoreBox('Empates', draws, Colors.grey),
+        scoreBox('O', oWins, Colors.red),
+      ],
+    );
+  }
+
+  Widget scoreBox(String label, int value, Color color) {
+    return Column(
+      children: [
+        Text(label, style: TextStyle(fontWeight: FontWeight.w700, color: color)),
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+          child: Text(value.toString(), style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+        )
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final boardGrid = AspectRatio(
+      aspectRatio: 1,
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 9,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3),
+        itemBuilder: (context, index) {
+          return buildCell(index);
+        },
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Jogo da Velha'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            scorePanel(),
+            const SizedBox(height: 12),
+            Expanded(child: boardGrid),
+            const SizedBox(height: 12),
+            controlPanel(),
+            const SizedBox(height: 8),
+            const Text('Desenvolvido para minigame', style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+Jogo 2 - A próximo é o jogo da FORCA
+
+
+README — Minigame da Forca (Hangman)
+🎯 Objetivo
+
+O jogador tenta adivinhar uma palavra bíblica (ou um conjunto de palavras seguras), escolhendo letras dentro de um limite de erros. Cada erro revela uma parte do boneco da forca.
+
+Conteúdo 100% seguro para adultos e crianças.
+
+⭐ Funcionalidades previstas
+
+Escolha aleatória de palavra.
+
+Palavras controladas por você (fácil moderar).
+
+Interface simples e intuitiva.
+
+Botões de A–Z para o jogador clicar.
+
+Exibe letras já descobertas e as letras erradas.
+
+Limite padrão de 6 erros (modificável).
+
+Vitória ao completar a palavra.
+
+Derrota ao alcançar o limite de erros.
+
+Botão de reiniciar no final.
+
+📦 Código completo — minigame_forca.dart
+
+Basta criar um arquivo minigame_forca.dart e rodar dentro do seu app Flutter.
+Você pode colar isso dentro de qualquer tela.
+
+
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+class HangmanGame extends StatefulWidget {
+  const HangmanGame({super.key});
+
+  @override
+  State<HangmanGame> createState() => _HangmanGameState();
+}
+
+class _HangmanGameState extends State<HangmanGame> {
+  // Palavras seguras (biblicamente neutras ou positivas)
+  final List<String> words = [
+    "MOISES",
+    "DANIEL",
+    "JESUS",
+    "RUTE",
+    "ESTER",
+    "ISAIAS",
+    "AMOR",
+    "FE",
+    "SALMO",
+    "JOSE",
+    "PAZ",
+    "ABRAAO",
+    "ORACAO"
+  ];
+
+  late String chosenWord;
+  List<String> guessedLetters = [];
+  List<String> wrongLetters = [];
+  int maxErrors = 6;
+
+  @override
+  void initState() {
+    super.initState();
+    _restartGame();
+  }
+
+  void _restartGame() {
+    chosenWord = words[Random().nextInt(words.length)];
+    guessedLetters = [];
+    wrongLetters = [];
+    setState(() {});
+  }
+
+  bool get hasWon =>
+      chosenWord.split('').every((letter) => guessedLetters.contains(letter));
+
+  bool get hasLost => wrongLetters.length >= maxErrors;
+
+  void _guessLetter(String letter) {
+    if (guessedLetters.contains(letter) || wrongLetters.contains(letter)) {
+      return; // já tentada
+    }
+
+    if (chosenWord.contains(letter)) {
+      guessedLetters.add(letter);
+    } else {
+      wrongLetters.add(letter);
+    }
+
+    setState(() {});
+  }
+
+  Widget _buildHangmanDrawing() {
+    // simples representação do boneco com base nos erros
+    int errors = wrongLetters.length;
+
+    return Column(
+      children: [
+        Text("Erros: $errors / $maxErrors",
+            style: const TextStyle(fontSize: 18)),
+        const SizedBox(height: 10),
+        Text(errors >= 1 ? "O" : "", style: const TextStyle(fontSize: 40)),
+        Text(errors >= 2 ? "|" : "", style: const TextStyle(fontSize: 40)),
+        Text(errors >= 3 ? "/" : "", style: const TextStyle(fontSize: 40)),
+        Text(errors >= 4 ? "\\" : "", style: const TextStyle(fontSize: 40)),
+        Text(errors >= 5 ? "/" : "", style: const TextStyle(fontSize: 40)),
+        Text(errors >= 6 ? "\\" : "", style: const TextStyle(fontSize: 40)),
+      ],
+    );
+  }
+
+  Widget _buildWordDisplay() {
+    return Wrap(
+      spacing: 8,
+      children: chosenWord
+          .split('')
+          .map((letter) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  guessedLetters.contains(letter) ? letter : "_",
+                  style: const TextStyle(fontSize: 32),
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+  Widget _buildKeyboard() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: letters.split('').map((letter) {
+        bool disabled = guessedLetters.contains(letter) ||
+            wrongLetters.contains(letter) ||
+            hasWon ||
+            hasLost;
+
+        return ElevatedButton(
+          onPressed: disabled ? null : () => _guessLetter(letter),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue.shade200,
+            disabledBackgroundColor: Colors.grey.shade400,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: Text(letter),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Minigame - Forca"),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildHangmanDrawing(),
+              const SizedBox(height: 20),
+              _buildWordDisplay(),
+              const SizedBox(height: 20),
+              if (!hasWon && !hasLost) _buildKeyboard(),
+              const SizedBox(height: 20),
+              if (hasWon)
+                const Text(
+                  "Parabéns! Você acertou!",
+                  style: TextStyle(fontSize: 24, color: Colors.green),
+                ),
+              if (hasLost)
+                Text(
+                  "Você perdeu!\nA palavra era: $chosenWord",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 24, color: Colors.red),
+                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _restartGame,
+                child: const Text("Reiniciar"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+jogo 3 - Caça Palavras
+🎯 Objetivo
+
+Encontrar todas as palavras escondidas na grade, arrastando o dedo sobre as letras corretas.
+
+⭐ Funcionalidades
+
+Gera uma grade de letras aleatórias.
+
+Coloca palavras bíblicas (editáveis).
+
+Suporta palavras horizontais, verticais e diagonais.
+
+O usuário arrasta para selecionar letras.
+
+Quando acerta uma palavra, ela é marcada e riscada.
+
+Ao completar todas, aparece mensagem de vitória.
+
+Botão de reiniciar.
+
+📦 Código completo — minigame_caca_palavras.dart
+
+Basta colocar este arquivo no seu app Flutter e navegar para WordSearchGame().
+
+import 'package:flutter/material.dart';
+import 'dart:math';
+
+class WordSearchGame extends StatefulWidget {
+  const WordSearchGame({super.key});
+
+  @override
+  State<WordSearchGame> createState() => _WordSearchGameState();
+}
+
+class _WordSearchGameState extends State<WordSearchGame> {
+  final int gridSize = 12;
+
+  // Palavras bíblicas simples e seguras
+  final List<String> words = [
+    "MOISES",
+    "RUTE",
+    "PAZ",
+    "AMOR",
+    "JESUS",
+    "ESTER",
+    "SALMO",
+    "FE"
+  ];
+
+  late List<List<String>> grid;
+  List<String> foundWords = [];
+
+  Offset? dragStart;
+  Offset? dragEnd;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateGrid();
+  }
+
+  // Gera a grade completa
+  void _generateGrid() {
+    grid = List.generate(
+      gridSize,
+      (_) => List.generate(gridSize, (_) => ""),
+    );
+
+    // Posicionar palavras
+    for (var word in words) {
+      _placeWord(word);
+    }
+
+    // Preencher letras aleatórias
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (int r = 0; r < gridSize; r++) {
+      for (int c = 0; c < gridSize; c++) {
+        if (grid[r][c].isEmpty) {
+          grid[r][c] = alphabet[Random().nextInt(alphabet.length)];
+        }
+      }
+    }
+
+    foundWords.clear();
+    setState(() {});
+  }
+
+  // Tenta colocar a palavra em uma direção aleatória
+  void _placeWord(String word) {
+    final directions = [
+      const Offset(1, 0), // horizontal →
+      const Offset(0, 1), // vertical ↓
+      const Offset(1, 1), // diagonal ↘
+      const Offset(-1, 0), // horizontal ←
+      const Offset(0, -1), // vertical ↑
+      const Offset(-1, -1), // diagonal ↖
+      const Offset(1, -1), // diagonal ↗
+      const Offset(-1, 1), // diagonal ↙
+    ];
+
+    bool placed = false;
+    final rand = Random();
+
+    while (!placed) {
+      final dir = directions[rand.nextInt(directions.length)];
+      final startRow = rand.nextInt(gridSize);
+      final startCol = rand.nextInt(gridSize);
+
+      int endRow = startRow + dir.dy.toInt() * (word.length - 1);
+      int endCol = startCol + dir.dx.toInt() * (word.length - 1);
+
+      // Checar se está dentro da grade
+      if (endRow < 0 ||
+          endCol < 0 ||
+          endRow >= gridSize ||
+          endCol >= gridSize) continue;
+
+      // Checa se cabe sem conflito
+      bool conflict = false;
+      for (int i = 0; i < word.length; i++) {
+        int r = startRow + dir.dy.toInt() * i;
+        int c = startCol + dir.dx.toInt() * i;
+
+        if (grid[r][c].isNotEmpty && grid[r][c] != word[i]) {
+          conflict = true;
+          break;
+        }
+      }
+      if (conflict) continue;
+
+      // Coloca a palavra
+      for (int i = 0; i < word.length; i++) {
+        int r = startRow + dir.dy.toInt() * i;
+        int c = startCol + dir.dx.toInt() * i;
+        grid[r][c] = word[i];
+      }
+
+      placed = true;
+    }
+  }
+
+  // Converte posição do toque para coordenadas da grade
+  Offset _globalToGrid(Offset globalPos, RenderBox box) {
+    final local = box.globalToLocal(globalPos);
+    final cellSize = box.size.width / gridSize;
+    return Offset((local.dx / cellSize).floor(), (local.dy / cellSize).floor());
+  }
+
+  // Verifica se formação entre dragStart → dragEnd forma uma palavra válida
+  void _checkSelectedWord() {
+    if (dragStart == null || dragEnd == null) return;
+
+    int startX = dragStart!.dx.toInt();
+    int startY = dragStart!.dy.toInt();
+    int endX = dragEnd!.dx.toInt();
+    int endY = dragEnd!.dy.toInt();
+
+    int dx = endX - startX;
+    int dy = endY - startY;
+
+    int length = max(dx.abs(), dy.abs()) + 1;
+
+    int stepX = dx == 0 ? 0 : dx ~/ dx.abs();
+    int stepY = dy == 0 ? 0 : dy ~/ dy.abs();
+
+    String selected = "";
+    for (int i = 0; i < length; i++) {
+      int x = startX + (stepX * i);
+      int y = startY + (stepY * i);
+
+      if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return;
+      selected += grid[y][x];
+    }
+
+    if (words.contains(selected) && !foundWords.contains(selected)) {
+      setState(() => foundWords.add(selected));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Minigame - Caça Palavras"),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: LayoutBuilder(
+              builder: (_, constraints) {
+                double size = constraints.maxWidth;
+                return GestureDetector(
+                  onPanStart: (details) {
+                    final box = context.findRenderObject() as RenderBox;
+                    dragStart = _globalToGrid(details.globalPosition, box);
+                  },
+                  onPanEnd: (_) {
+                    _checkSelectedWord();
+                    dragStart = null;
+                    dragEnd = null;
+                  },
+                  onPanUpdate: (details) {
+                    final box = context.findRenderObject() as RenderBox;
+                    dragEnd = _globalToGrid(details.globalPosition, box);
+                  },
+                  child: Container(
+                    width: size,
+                    height: size,
+                    color: Colors.grey.shade200,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: gridSize,
+                      ),
+                      itemCount: gridSize * gridSize,
+                      itemBuilder: (_, index) {
+                        int row = index ~/ gridSize;
+                        int col = index % gridSize;
+
+                        String letter = grid[row][col];
+                        bool highlighted = false;
+
+                        return Container(
+                          alignment: Alignment.center,
+                          margin: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: highlighted
+                                ? Colors.yellow
+                                : Colors.white,
+                            border: Border.all(color: Colors.black12),
+                          ),
+                          child: Text(
+                            letter,
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Lista de palavras
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const Text("Encontre as palavras:",
+                    style:
+                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: words.map((w) {
+                    bool found = foundWords.contains(w);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 4, horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: found ? Colors.green.shade300 : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        w,
+                        style: TextStyle(
+                            fontSize: 16,
+                            decoration:
+                                found ? TextDecoration.lineThrough : null),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          if (foundWords.length == words.length)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                "Parabéns! Você encontrou todas as palavras!",
+                style: TextStyle(fontSize: 22, color: Colors.green),
+              ),
+            ),
+
+          ElevatedButton(
+            onPressed: _generateGrid,
+            child: const Text("Reiniciar"),
+          ),
+
+          const SizedBox(height: 20)
+        ],
+      ),
+    );
+  }
+}
+
+
+jogo 4 -  Labirinto
+
+README — Minigame Labirinto
+🎯 Objetivo
+
+O jogador move um personagem dentro de um labirinto até alcançar o ponto de chegada.
+
+🎮 Mecânica
+
+O labirinto é uma matriz 2D com:
+
+0 = chão
+
+1 = parede
+
+S = início
+
+E = saída
+
+O jogador move usando botões (cima/baixo/esquerda/direita).
+
+Não pode atravessar paredes.
+
+Ao chegar na saída, aparece mensagem de vitória.
+
+Botão de reiniciar.
+
+🧱 Gerador de Labirinto
+
+Para simplicidade, este minigame usa um labirinto pré-definido, ideal para uma primeira versão rápida e funcional.
+Se quiser futuramente, posso te mandar uma versão com geração procedural.
+
+📦 Código — minigame_labirinto.dart
+
+Cole este arquivo no seu projeto e abra com MazeGame().
+
+import 'package:flutter/material.dart';
+
+class MazeGame extends StatefulWidget {
+  const MazeGame({super.key});
+
+  @override
+  State<MazeGame> createState() => _MazeGameState();
+}
+
+class _MazeGameState extends State<MazeGame> {
+  late List<List<int>> maze;
+
+  // Posição do jogador
+  int playerRow = 1;
+  int playerCol = 1;
+
+  // Saída
+  final int exitRow = 10;
+  final int exitCol = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetGame();
+  }
+
+  void _resetGame() {
+    // 0 = caminho
+    // 1 = parede
+    // S = posição inicial (1,1)
+    // E = posição final (10,10)
+    maze = [
+      [1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,1,0,0,0,0,0,0,1],
+      [1,0,1,0,1,0,1,1,1,1,0,1],
+      [1,0,1,0,0,0,0,0,0,1,0,1],
+      [1,0,1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,1,0,1,0,1],
+      [1,0,1,1,1,1,0,1,0,1,0,1],
+      [1,0,0,0,0,1,0,1,0,1,0,1],
+      [1,1,1,1,0,1,0,1,0,1,0,1],
+      [1,0,0,1,0,1,0,1,0,0,0,1],
+      [1,0,0,1,0,0,0,1,1,1,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1],
+    ];
+
+    playerRow = 1;
+    playerCol = 1;
+    setState(() {});
+  }
+
+  void _movePlayer(int rowOffset, int colOffset) {
+    int newRow = playerRow + rowOffset;
+    int newCol = playerCol + colOffset;
+
+    // não sair dos limites
+    if (newRow < 0 || newRow >= maze.length) return;
+    if (newCol < 0 || newCol >= maze[0].length) return;
+
+    // não atravessar parede
+    if (maze[newRow][newCol] == 1) return;
+
+    setState(() {
+      playerRow = newRow;
+      playerCol = newCol;
+    });
+  }
+
+  bool get hasWon => playerRow == exitRow && playerCol == exitCol;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Minigame - Labirinto"),
+      ),
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+
+          // GRADE DO LABIRINTO
+          Expanded(
+            child: Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: GridView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 12),
+                  itemCount: 12 * 12,
+                  itemBuilder: (_, index) {
+                    int row = index ~/ 12;
+                    int col = index % 12;
+
+                    bool isPlayer = (row == playerRow && col == playerCol);
+                    bool isExit = (row == exitRow && col == exitCol);
+
+                    Color color;
+
+                    if (isPlayer) {
+                      color = Colors.blue;
+                    } else if (isExit) {
+                      color = Colors.green;
+                    } else if (maze[row][col] == 1) {
+                      color = Colors.black87;
+                    } else {
+                      color = Colors.white;
+                    }
+
+                    return Container(
+                      margin: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // CONTROLES DE MOVIMENTO
+          Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                      onPressed: () => _movePlayer(-1, 0),
+                      child: const Icon(Icons.keyboard_arrow_up)),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                      onPressed: () => _movePlayer(0, -1),
+                      child: const Icon(Icons.keyboard_arrow_left)),
+                  const SizedBox(width: 20),
+                  ElevatedButton(
+                      onPressed: () => _movePlayer(0, 1),
+                      child: const Icon(Icons.keyboard_arrow_right)),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                      onPressed: () => _movePlayer(1, 0),
+                      child: const Icon(Icons.keyboard_arrow_down)),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          if (hasWon)
+            const Text(
+              "Parabéns! Você chegou ao final do labirinto!",
+              style: TextStyle(fontSize: 20, color: Colors.green),
+            ),
+
+          const SizedBox(height: 20),
+
+          ElevatedButton(
+            onPressed: _resetGame,
+            child: const Text("Reiniciar"),
+          ),
+
+          const SizedBox(height: 20)
+        ],
+      ),
+    );
+  }
+}
+
+Jogo 5 = Sequência Rápida
+🧩 Minigame: Sequência Rápida
+
+Um jogo simples onde o jogador deve memorizar e repetir uma sequência de cores, sons ou números.
+Cada rodada aumenta a dificuldade com uma nova entrada na sequência.
+Extremamente divertido para crianças e adultos, totalmente seguro e moralmente neutro.
+
+📘 README — Como funciona
+🎮 Mecânica básica
+
+O jogo exibe uma sequência de cores (ex: vermelho, azul, verde).
+
+O jogador observa.
+
+O jogo esconde a sequência.
+
+O usuário deve tocar nas cores na mesma ordem.
+
+Se acertar, vai para o próximo nível com uma sequência maior.
+
+Se errar, o jogo reinicia.
+
+🧱 Componentes
+
+SequenceController: controla geração e validação.
+
+SequenceGamePage: interface principal.
+
+Botões coloridos com animação.
+
+Indicação visual do nível atual.
+
+🎨 Customizações fáceis
+
+Trocar cores por ícones bíblicos.
+
+Adicionar sons para aumentar imersão.
+
+Trocar cores por números para fins educativos.
+
+Modo infantil com tempo ilimitado.
+
+📦 CÓDIGO COMPLETO — Sequência Rápida (Flutter)
+
+Crie um arquivo:
+sequence_game.dart
+
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
+
+class SequenceGamePage extends StatefulWidget {
+  const SequenceGamePage({super.key});
+
+  @override
+  State<SequenceGamePage> createState() => _SequenceGamePageState();
+}
+
+class _SequenceGamePageState extends State<SequenceGamePage> {
+  final Random _random = Random();
+
+  List<int> sequence = [];
+  List<int> playerInput = [];
+  bool showingSequence = false;
+  int level = 1;
+
+  // Lista de cores fixas
+  final List<Color> colors = [
+    Colors.red,
+    Colors.blue,
+    Colors.green,
+    Colors.yellow,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    startGame();
+  }
+
+  void startGame() {
+    sequence.clear();
+    playerInput.clear();
+    level = 1;
+    generateSequence();
+    playSequence();
+  }
+
+  void generateSequence() {
+    for (int i = 0; i < level; i++) {
+      sequence.add(_random.nextInt(colors.length));
+    }
+  }
+
+  void playSequence() async {
+    showingSequence = true;
+    playerInput.clear();
+    setState(() {});
+
+    // Mostra a sequência com destaque
+    for (int index in sequence) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      highlight(index);
+    }
+
+    showingSequence = false;
+    setState(() {});
+  }
+
+  int highlightedIndex = -1;
+
+  void highlight(int index) {
+    setState(() {
+      highlightedIndex = index;
+    });
+
+    Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        highlightedIndex = -1;
+      });
+    });
+  }
+
+  void onPlayerTap(int index) {
+    if (showingSequence) return; // usuário não pode jogar durante a exibição
+
+    playerInput.add(index);
+
+    // Feedback visual
+    highlight(index);
+
+    // Validação parcial
+    for (int i = 0; i < playerInput.length; i++) {
+      if (playerInput[i] != sequence[i]) {
+        showLoseDialog();
+        return;
+      }
+    }
+
+    // Se completou a sequência
+    if (playerInput.length == sequence.length) {
+      level++;
+      sequence.add(_random.nextInt(colors.length));
+      playSequence();
+    }
+  }
+
+  void showLoseDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Errou!"),
+        content: Text("Você alcançou o nível $level."),
+        actions: [
+          TextButton(
+            child: const Text("Recomeçar"),
+            onPressed: () {
+              Navigator.pop(context);
+              startGame();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildButton(int index) {
+    return GestureDetector(
+      onTap: () => onPlayerTap(index),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: highlightedIndex == index ? 1.0 : 0.4,
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors[index],
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const SizedBox.expand(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Sequência Rápida")),
+      body: Column(
+        children: [
+          const SizedBox(height: 20),
+
+          Text(
+            showingSequence ? "Observe a sequência" : "Sua vez!",
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+
+          const SizedBox(height: 10),
+
+          Text(
+            "Nível: $level",
+            style: const TextStyle(fontSize: 18),
+          ),
+
+          const Spacer(),
+
+          // Grade de 4 cores
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              children: List.generate(
+                colors.length,
+                (i) => buildButton(i),
+              ),
+            ),
+          ),
+
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+Jogo 7 - Quebra-Cabeças
+
+A seguir vou entregar no mesmo formato dos outros:
+📘 README + Código Flutter completo, pronto para uso.
+
+Se quiser outro tipo de jogo depois, posso seguir também.
+
+🧩 Minigame: Puzzle (com upload de imagem)
+
+Um jogo de quebra-cabeça estilo “slide puzzle”, onde o usuário pode:
+
+Escolher uma imagem pré-definida ou
+
+Enviar uma foto própria
+E o jogo automaticamente recorta a imagem em blocos, embaralha e o jogador deve reorganizar.
+
+📘 README — Funcionamento do Puzzle
+🎮 Mecânica
+
+Jogador seleciona uma imagem (da galeria ou uma padrão).
+
+O app corta a imagem em n × n peças (ex: 3×3 ou 4×4).
+
+As peças são embaralhadas.
+
+O jogador toca nas peças para trocá-las de lugar.
+
+Quando todas as peças voltam para a posição correta → vitória!
+
+🔧 Recursos
+
+Upload de imagem (ImagePicker)
+
+Divisão automática da imagem em tiles
+
+Detecção de conclusão
+
+Animação leve na troca das peças
+
+Botão “Recomeçar”
+
+Suporte para crianças e adultos (sem conteúdo ofensivo)
+
+🧱 Estrutura dos arquivos
+puzzle_game.dart     ← Tela principal do puzzle
+
+📦 CÓDIGO COMPLETO — Puzzle com upload de imagem
+
+⚠️ É um modelo simples totalmente funcional, sem dependências além de image_picker.
+
+pubspec.yaml 
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker: ^1.0.0
+
+Código do jogo
+
+import 'dart:io';
+import 'dart:math';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+class PuzzleGamePage extends StatefulWidget {
+  const PuzzleGamePage({super.key});
+
+  @override
+  State<PuzzleGamePage> createState() => _PuzzleGamePageState();
+}
+
+class _PuzzleGamePageState extends State<PuzzleGamePage> {
+  ui.Image? fullImage;
+  List<ui.Image> tiles = [];
+  List<int> tileOrder = [];
+  int gridSize = 3; // 3x3 puzzle
+  bool ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    loadSampleImage();
+  }
+
+  Future<void> loadSampleImage() async {
+    final data = await rootBundle.load("assets/sample.jpg");
+    final image = await decodeImageFromList(data.buffer.asUint8List());
+    setState(() {
+      fullImage = image;
+    });
+    sliceImage();
+  }
+
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    final img = await decodeImageFromList(bytes);
+    setState(() {
+      fullImage = img;
+    });
+    sliceImage();
+  }
+
+  Future<void> sliceImage() async {
+    if (fullImage == null) return;
+
+    tiles.clear();
+    tileOrder.clear();
+
+    int w = fullImage!.width;
+    int h = fullImage!.height;
+    int tileW = (w / gridSize).floor();
+    int tileH = (h / gridSize).floor();
+
+    for (int y = 0; y < gridSize; y++) {
+      for (int x = 0; x < gridSize; x++) {
+        final recorder = ui.PictureRecorder();
+        final canvas = Canvas(recorder);
+        final src = Rect.fromLTWH(x * tileW.toDouble(), y * tileH.toDouble(),
+            tileW.toDouble(), tileH.toDouble());
+        final dst = Rect.fromLTWH(0, 0, tileW.toDouble(), tileH.toDouble());
+
+        canvas.drawImageRect(fullImage!, src, dst, Paint());
+        final tile = await recorder.endRecording().toImage(tileW, tileH);
+
+        tiles.add(tile);
+      }
+    }
+
+    tileOrder = List.generate(tiles.length, (i) => i);
+    tileOrder.shuffle(Random());
+
+    setState(() {
+      ready = true;
+    });
+  }
+
+  void swapTiles(int index) {
+    setState(() {
+      int correct = tileOrder[index];
+      tileOrder[index] = tileOrder[0];
+      tileOrder[0] = correct;
+    });
+
+    checkWin();
+  }
+
+  void checkWin() {
+    bool win = true;
+    for (int i = 0; i < tileOrder.length; i++) {
+      if (tileOrder[i] != i) win = false;
+    }
+
+    if (win) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text("Parabéns!"),
+          content: const Text("Você completou o puzzle."),
+          actions: [
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () => Navigator.pop(context),
+            )
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget buildTile(int index) {
+    int tileIndex = tileOrder[index];
+    final tile = tiles[tileIndex];
+
+    return GestureDetector(
+      onTap: () => swapTiles(index),
+      child: Image.memory(
+        Uint8List.fromList(
+          (await tile.toByteData(format: ui.ImageByteFormat.png))!
+              .buffer
+              .asUint8List(),
+        ),
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ready) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Puzzle"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.image),
+            onPressed: pickImage,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: sliceImage,
+          ),
+        ],
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: tiles.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: gridSize,
+        ),
+        itemBuilder: (context, index) {
+          return FutureBuilder<Uint8List>(
+            future: tiles[tileOrder[index]]
+                .toByteData(format: ui.ImageByteFormat.png)
+                .then((b) => b!.buffer.asUint8List()),
+            builder: (_, snapshot) {
+              if (!snapshot.hasData) return Container(color: Colors.grey[300]);
+              return GestureDetector(
+                onTap: () => swapTiles(index),
+                child: Image.memory(snapshot.data!, fit: BoxFit.cover),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+
+

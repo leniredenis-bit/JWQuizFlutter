@@ -6,11 +6,19 @@ import 'minigames/word_search_game.dart';
 import 'minigames/maze_game.dart';
 import 'minigames/sequence_game.dart';
 import 'minigames/puzzle_game.dart';
+import 'memory_game_screen.dart';
 
 class MinigamesMenuScreen extends StatelessWidget {
   const MinigamesMenuScreen({Key? key}) : super(key: key);
 
   final List<Map<String, dynamic>> minigames = const [
+    {
+      'emoji': '🧠',
+      'title': 'Jogo da Memória',
+      'desc': 'Encontre pares bíblicos!',
+      'color': Color(0xFFFF6B6B),
+      'screen': 'MemoryGame',
+    },
     {
       'emoji': '⭕',
       'title': 'Jogo da Velha',
@@ -33,7 +41,7 @@ class MinigamesMenuScreen extends StatelessWidget {
       'screen': 'WordSearchGame',
     },
     {
-      'emoji': '🧩',
+      'emoji': '🌀',
       'title': 'Labirinto',
       'desc': 'Encontre a saída!',
       'color': Color(0xFFFF9500),
@@ -48,8 +56,8 @@ class MinigamesMenuScreen extends StatelessWidget {
     },
     {
       'emoji': '🧩',
-      'title': 'Quebra-Cabeça',
-      'desc': 'Monte a imagem completa!',
+      'title': 'Quebra-Cabeça Jigsaw',
+      'desc': 'Arraste e monte!',
       'color': Color(0xFF3498DB),
       'screen': 'PuzzleGame',
     },
@@ -57,6 +65,8 @@ class MinigamesMenuScreen extends StatelessWidget {
 
   Widget _getGameScreen(String screenName) {
     switch (screenName) {
+      case 'MemoryGame':
+        return const MemoryGameScreen();
       case 'TicTacToeGame':
         return const TicTacToeGame();
       case 'HangmanGame':

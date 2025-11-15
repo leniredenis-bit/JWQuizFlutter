@@ -268,105 +268,284 @@ class _TicTacToeGameState extends State<TicTacToeGame> {
   }
 
   Widget controlPanel() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Mode selection
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            ToggleButtons(
-              isSelected: [mode == Mode.vsAi, mode == Mode.twoPlayers],
-              onPressed: (i) {
-                AudioService().playClick();
-                setState(() {
-                  mode = (i == 0) ? Mode.vsAi : Mode.twoPlayers;
-                });
-                resetBoard();
-              },
-              color: Colors.white70,
-              selectedColor: Colors.white,
-              fillColor: Color(0xFF4A90E2),
-              borderRadius: BorderRadius.circular(8),
-              children: const [
-                Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('vs IA')),
-                Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('2 jogadores'))
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFF1E2A3A).withOpacity(0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Info/Status text
+          Center(
+            child: Text(
+              infoText,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Mode selection - redesigned
+          Container(
+            decoration: BoxDecoration(
+              color: Color(0xFF0D1620),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      AudioService().playClick();
+                      setState(() {
+                        mode = Mode.vsAi;
+                      });
+                      resetBoard();
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: mode == Mode.vsAi ? Color(0xFF4A90E2) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.computer,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'vs IA',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: mode == Mode.vsAi ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      AudioService().playClick();
+                      setState(() {
+                        mode = Mode.twoPlayers;
+                      });
+                      resetBoard();
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: mode == Mode.twoPlayers ? Color(0xFF4A90E2) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            '2 Jogadores',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: mode == Mode.twoPlayers ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
-            Row(children: [
-              const Text('Quem começa: ', style: TextStyle(color: Colors.white70)),
-              Switch(
-                value: xStarts,
-                onChanged: (v) {
-                  AudioService().playClick();
-                  setState(() {
-                    xStarts = v;
-                    resetBoard();
-                  });
-                },
-              ),
-              Text(xStarts ? 'X' : 'O', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ])
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Difficulty
-        if (mode == Mode.vsAi)
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Difficulty & Starter
           Row(
             children: [
-              const Text('Dificuldade: ', style: TextStyle(color: Colors.white70)),
-              const SizedBox(width: 8),
-              DropdownButton<AiDifficulty>(
-                value: aiDifficulty,
-                dropdownColor: Color(0xFF1E2A3A),
-                style: TextStyle(color: Colors.white),
-                items: const [
-                  DropdownMenuItem(value: AiDifficulty.easy, child: Text('Fácil')),
-                  DropdownMenuItem(value: AiDifficulty.impossible, child: Text('Impossível')),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  AudioService().playClick();
-                  setState(() {
-                    aiDifficulty = v;
-                  });
-                },
+              // Difficulty (only if vs AI)
+              if (mode == Mode.vsAi)
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF0D1620),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.psychology, color: Colors.orange, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<AiDifficulty>(
+                            value: aiDifficulty,
+                            isExpanded: true,
+                            dropdownColor: Color(0xFF1E2A3A),
+                            style: TextStyle(color: Colors.white, fontSize: 14),
+                            underline: Container(),
+                            items: const [
+                              DropdownMenuItem(value: AiDifficulty.easy, child: Text('Fácil')),
+                              DropdownMenuItem(value: AiDifficulty.impossible, child: Text('Impossível')),
+                            ],
+                            onChanged: (v) {
+                              if (v == null) return;
+                              AudioService().playClick();
+                              setState(() {
+                                aiDifficulty = v;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              
+              if (mode == Mode.vsAi) const SizedBox(width: 12),
+              
+              // Who starts
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Color(0xFF0D1620),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.play_arrow, color: Colors.green, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Inicia:',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              if (!xStarts) {
+                                AudioService().playClick();
+                                setState(() {
+                                  xStarts = true;
+                                  resetBoard();
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: xStarts ? Colors.blue : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'X',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: xStarts ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              if (xStarts) {
+                                AudioService().playClick();
+                                setState(() {
+                                  xStarts = false;
+                                  resetBoard();
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: !xStarts ? Colors.red : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'O',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: !xStarts ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
-        const SizedBox(height: 8),
-        // Info and buttons
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(infoText, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
-            Row(
-              children: [
-                ElevatedButton.icon(
+          
+          const SizedBox(height: 12),
+          
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
                   onPressed: () {
                     AudioService().playClick();
                     resetBoard();
                   },
-                  icon: const Icon(Icons.replay),
+                  icon: const Icon(Icons.replay, size: 20),
                   label: const Text('Reiniciar'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF4A90E2),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                    onPressed: () {
-                      resetAll();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFFE24A4A),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: resetAll,
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('Zerar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFFE24A4A),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text('Zerar placar'))
-              ],
-            )
-          ],
-        ),
-      ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

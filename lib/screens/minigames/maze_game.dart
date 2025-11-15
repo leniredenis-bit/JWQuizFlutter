@@ -20,18 +20,33 @@ class _MazeGameState extends State<MazeGame> {
   bool _isGameWon = false;
   int _moves = 0;
   
-  // Maze layout (0 = path, 1 = wall, 2 = start, 3 = end)
+  // Para repetição de movimento ao segurar botão
+  bool _isMoving = false;
+  int _moveDirection = 0; // 1=up, 2=down, 3=left, 4=right
+  
+  // Maze layout maior e mais complexo (20x20)
+  // 0 = caminho, 1 = parede, 2 = início, 3 = fim
   final List<List<int>> _maze = [
-    [2, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-    [0, 0, 1, 0, 1, 0, 1, 0, 1, 0],
-    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
-    [1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0],
-    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 1, 1, 1, 0, 1, 3],
+    [2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0],
+    [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+    [0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0],
+    [1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0],
+    [0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
   ];
 
   @override
@@ -80,6 +95,42 @@ class _MazeGameState extends State<MazeGame> {
     }
   }
 
+  // Inicia movimento contínuo
+  void _startContinuousMove(int direction) {
+    if (_isMoving) return;
+    setState(() {
+      _isMoving = true;
+      _moveDirection = direction;
+    });
+    _continuousMove();
+  }
+
+  // Para movimento contínuo
+  void _stopContinuousMove() {
+    setState(() {
+      _isMoving = false;
+      _moveDirection = 0;
+    });
+  }
+
+  // Move continuamente enquanto botão estiver pressionado
+  void _continuousMove() async {
+    if (!_isMoving) return;
+
+    switch (_moveDirection) {
+      case 1: _movePlayer(-1, 0); break; // Up
+      case 2: _movePlayer(1, 0); break;  // Down
+      case 3: _movePlayer(0, -1); break; // Left
+      case 4: _movePlayer(0, 1); break;  // Right
+    }
+
+    await Future.delayed(const Duration(milliseconds: 150));
+    
+    if (_isMoving && mounted) {
+      _continuousMove();
+    }
+  }
+
   void _resetGame() {
     setState(() {
       _playerRow = 0;
@@ -119,6 +170,143 @@ class _MazeGameState extends State<MazeGame> {
       return '🏆';
     }
     return '';
+  }
+
+  // Controles circulares estilizados
+  Widget _buildCircularControls() {
+    return Container(
+      width: 200,
+      height: 200,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.1),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+      ),
+      child: Stack(
+        children: [
+          // Botão Cima
+          Positioned(
+            top: 10,
+            left: 75,
+            child: GestureDetector(
+              onTapDown: (_) => _startContinuousMove(1),
+              onTapUp: (_) => _stopContinuousMove(),
+              onTapCancel: () => _stopContinuousMove(),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.arrow_upward, color: Colors.white, size: 30),
+              ),
+            ),
+          ),
+          
+          // Botão Baixo
+          Positioned(
+            bottom: 10,
+            left: 75,
+            child: GestureDetector(
+              onTapDown: (_) => _startContinuousMove(2),
+              onTapUp: (_) => _stopContinuousMove(),
+              onTapCancel: () => _stopContinuousMove(),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.arrow_downward, color: Colors.white, size: 30),
+              ),
+            ),
+          ),
+          
+          // Botão Esquerda
+          Positioned(
+            left: 10,
+            top: 75,
+            child: GestureDetector(
+              onTapDown: (_) => _startContinuousMove(3),
+              onTapUp: (_) => _stopContinuousMove(),
+              onTapCancel: () => _stopContinuousMove(),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.arrow_back, color: Colors.white, size: 30),
+              ),
+            ),
+          ),
+          
+          // Botão Direita
+          Positioned(
+            right: 10,
+            top: 75,
+            child: GestureDetector(
+              onTapDown: (_) => _startContinuousMove(4),
+              onTapUp: (_) => _stopContinuousMove(),
+              onTapCancel: () => _stopContinuousMove(),
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.8),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.arrow_forward, color: Colors.white, size: 30),
+              ),
+            ),
+          ),
+          
+          // Centro decorativo
+          Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.navigation, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -194,95 +382,50 @@ class _MazeGameState extends State<MazeGame> {
                     ),
                   ),
 
-                // Maze grid
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: List.generate(_maze.length, (row) {
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_maze[row].length, (col) {
-                          return Container(
-                            width: 35,
-                            height: 35,
-                            margin: const EdgeInsets.all(1),
-                            decoration: BoxDecoration(
-                              color: _getCellColor(row, col),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: Colors.black.withOpacity(0.2),
-                                width: 1,
+                // Maze grid - menor para caber na tela
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: List.generate(_maze.length, (row) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(_maze[row].length, (col) {
+                            return Container(
+                              width: 18,
+                              height: 18,
+                              margin: const EdgeInsets.all(0.5),
+                              decoration: BoxDecoration(
+                                color: _getCellColor(row, col),
+                                borderRadius: BorderRadius.circular(2),
+                                border: Border.all(
+                                  color: Colors.black.withOpacity(0.1),
+                                  width: 0.5,
+                                ),
                               ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _getCellEmoji(row, col),
-                                style: const TextStyle(fontSize: 20),
+                              child: Center(
+                                child: Text(
+                                  _getCellEmoji(row, col),
+                                  style: const TextStyle(fontSize: 10),
+                                ),
                               ),
-                            ),
-                          );
-                        }),
-                      );
-                    }),
+                            );
+                          }),
+                        );
+                      }),
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
-                // Instructions
-                const Text(
-                  'Use as setas do teclado',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
-                ),
-                const SizedBox(height: 10),
-
-                // Arrow buttons for mobile
-                Column(
-                  children: [
-                    // Up arrow
-                    IconButton(
-                      onPressed: () => _movePlayer(-1, 0),
-                      icon: const Icon(Icons.arrow_upward, size: 40),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Left arrow
-                        IconButton(
-                          onPressed: () => _movePlayer(0, -1),
-                          icon: const Icon(Icons.arrow_back, size: 40),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                        const SizedBox(width: 80),
-                        // Right arrow
-                        IconButton(
-                          onPressed: () => _movePlayer(0, 1),
-                          icon: const Icon(Icons.arrow_forward, size: 40),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.3),
-                          ),
-                        ),
-                      ],
-                    ),
-                    // Down arrow
-                    IconButton(
-                      onPressed: () => _movePlayer(1, 0),
-                      icon: const Icon(Icons.arrow_downward, size: 40),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                  ],
-                ),
+                // Controles circulares
+                _buildCircularControls(),
 
                 const SizedBox(height: 20),
 

@@ -124,14 +124,47 @@ class _WordSearchGameState extends State<WordSearchGame> {
       _dragStart = Point(row, col);
       _selectedCells = [Point(row, col)];
     });
+    _audioService.playClick();
   }
 
   void _onCellDragUpdate(int row, int col) {
     if (_dragStart == null) return;
+    if (row < 0 || row >= gridSize || col < 0 || col >= gridSize) return;
+    
+    // Só atualiza se mudou de célula
+    if (_selectedCells != null && _selectedCells!.isNotEmpty) {
+      Point<int> lastCell = _selectedCells!.last;
+      if (lastCell.x == row && lastCell.y == col) return;
+    }
     
     setState(() {
       _selectedCells = _getCellsInLine(_dragStart!, Point(row, col));
     });
+  }
+
+  // Converte posição local do toque em índices de linha/coluna
+  void _handlePanStart(Offset localPosition) {
+    const cellSize = 30.0; // 28px + 2px margin
+    const padding = 8.0;
+    
+    int col = ((localPosition.dx - padding) / cellSize).floor();
+    int row = ((localPosition.dy - padding) / cellSize).floor();
+    
+    if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
+      _onCellDragStart(row, col);
+    }
+  }
+
+  void _handlePanUpdate(Offset localPosition) {
+    const cellSize = 30.0;
+    const padding = 8.0;
+    
+    int col = ((localPosition.dx - padding) / cellSize).floor();
+    int row = ((localPosition.dy - padding) / cellSize).floor();
+    
+    if (row >= 0 && row < gridSize && col >= 0 && col < gridSize) {
+      _onCellDragUpdate(row, col);
+    }
   }
 
   void _onCellDragEnd() {
@@ -277,25 +310,31 @@ class _WordSearchGameState extends State<WordSearchGame> {
 
                 const SizedBox(height: 10),
 
-                // Grid
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    children: List.generate(gridSize, (row) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(gridSize, (col) {
-                          bool isSelected = _isCellSelected(row, col);
-                          
-                          return GestureDetector(
-                            onPanStart: (_) => _onCellDragStart(row, col),
-                            onPanUpdate: (_) => _onCellDragUpdate(row, col),
-                            onPanEnd: (_) => _onCellDragEnd(),
-                            child: Container(
+                // Grid with global gesture detector
+                GestureDetector(
+                  onPanStart: (details) {
+                    _handlePanStart(details.localPosition);
+                  },
+                  onPanUpdate: (details) {
+                    _handlePanUpdate(details.localPosition);
+                  },
+                  onPanEnd: (_) {
+                    _onCellDragEnd();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: List.generate(gridSize, (row) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(gridSize, (col) {
+                            bool isSelected = _isCellSelected(row, col);
+                            
+                            return Container(
                               width: 28,
                               height: 28,
                               margin: const EdgeInsets.all(1),
@@ -315,11 +354,11 @@ class _WordSearchGameState extends State<WordSearchGame> {
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }),
-                      );
-                    }),
+                            );
+                          }),
+                        );
+                      }),
+                    ),
                   ),
                 ),
 

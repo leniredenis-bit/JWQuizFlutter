@@ -1,0 +1,24 @@
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          AudioService().playClick();
+          showDialog(
+            context: context,
+            builder: (context) => SettingsDialog(
+              onThemeChanged: (isDark) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tema ${isDark ? "escuro" : "claro"} ativado!'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+        backgroundColor: Color(0xFF4A90E2),
+        child: Icon(Icons.settings, color: Colors.white),
+      ),
+    );
+  }
+}

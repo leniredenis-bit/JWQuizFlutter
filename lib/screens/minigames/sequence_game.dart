@@ -21,6 +21,10 @@ class _SequenceGameState extends State<SequenceGame> {
   bool _isPlayerTurn = false;
   bool _gameOver = false;
   int _currentShowIndex = 0;
+  int _lastTappedColor = -1; // Para animação de toque
+  bool _showSuccessAnimation = false; // Animação de acerto
+  
+  static const int maxLevel = 20; // Aumentado para 20 níveis
 
   // Colors
   final List<Color> _colors = [
@@ -95,10 +99,20 @@ class _SequenceGameState extends State<SequenceGame> {
     });
   }
 
-  void _onColorTap(int colorIndex) {
+  void _onColorTap(int colorIndex) async {
     if (!_isPlayerTurn || _gameOver) return;
 
+    // Animação de toque
+    setState(() {
+      _lastTappedColor = colorIndex;
+    });
     _audioService.playClick();
+    
+    await Future.delayed(const Duration(milliseconds: 200));
+    setState(() {
+      _lastTappedColor = -1;
+    });
+
     _playerSequence.add(colorIndex);
 
     // Check if player's move is correct
@@ -110,17 +124,30 @@ class _SequenceGameState extends State<SequenceGame> {
 
     // Check if player completed the sequence
     if (_playerSequence.length == _sequence.length) {
+      // Verifica se ganhou o jogo (chegou no nível 20)
+      if (_currentLevel >= maxLevel) {
+        _endGame(true);
+        return;
+      }
+      
       setState(() {
         _isPlayerTurn = false;
+        _showSuccessAnimation = true;
         _currentLevel++;
         if (_currentLevel - 1 > _highScore) {
           _highScore = _currentLevel - 1;
         }
       });
       _audioService.playCorrectAnswer();
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        _nextLevel();
+      
+      // Animação de sucesso
+      await Future.delayed(const Duration(milliseconds: 800));
+      setState(() {
+        _showSuccessAnimation = false;
       });
+      
+      await Future.delayed(const Duration(milliseconds: 500));
+      _nextLevel();
     }
   }
 
@@ -199,8 +226,54 @@ class _SequenceGameState extends State<SequenceGame> {
               ),
               const SizedBox(height: 40),
 
-              // Status text
-              if (_isShowingSequence)
+              // Status text / Success Animation
+              if (_showSuccessAnimation)
+                TweenAnimationBuilder(
+                  duration: const Duration(milliseconds: 600),
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  builder: (context, double value, child) {
+                    return Transform.scale(
+                      scale: 0.5 + (value * 0.5),
+                      child: Opacity(
+                        opacity: value,
+                        child: Container(
+                          padding: EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.5),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white, size: 50),
+                              SizedBox(height: 10),
+                              Text(
+                                '✨ Correto! ✨',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                'Nível $_currentLevel',
+                                style: TextStyle(color: Colors.white70, fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else if (_isShowingSequence)
                 const Text(
                   'Observe a sequência...',
                   style: TextStyle(color: Colors.white, fontSize: 20),
@@ -213,13 +286,19 @@ class _SequenceGameState extends State<SequenceGame> {
               else if (_gameOver)
                 Column(
                   children: [
-                    const Text(
-                      '❌ Fim de Jogo!',
-                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    Text(
+                      _currentLevel >= maxLevel ? '🎉 PARABÉNS! VOCÊ VENCEU! 🎉' : '❌ Fim de Jogo!',
+                      style: TextStyle(
+                        color: _currentLevel >= maxLevel ? Colors.green : Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Você alcançou o nível $_currentLevel',
+                      _currentLevel >= maxLevel 
+                        ? 'Você completou todos os 20 níveis!'
+                        : 'Você alcançou o nível $_currentLevel',
                       style: const TextStyle(color: Colors.white70, fontSize: 18),
                     ),
                   ],
@@ -234,9 +313,10 @@ class _SequenceGameState extends State<SequenceGame> {
                   runSpacing: 20,
                   alignment: WrapAlignment.center,
                   children: List.generate(4, (index) {
-                    bool isHighlighted = _isShowingSequence && 
+                    bool isHighlighted = (_isShowingSequence && 
                         _currentShowIndex >= 0 && 
-                        _sequence[_currentShowIndex] == index;
+                        _sequence[_currentShowIndex] == index) ||
+                        (_lastTappedColor == index); // Também acende ao tocar
                     
                     return GestureDetector(
                       onTap: () => _onColorTap(index),

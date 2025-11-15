@@ -9,29 +9,38 @@ class PuzzleGame extends StatefulWidget {
   State<PuzzleGame> createState() => _PuzzleGameState();
 }
 
+class PuzzlePiece {
+  final int id;
+  final String emoji;
+  final Color color;
+  
+  PuzzlePiece({required this.id, required this.emoji, required this.color});
+}
+
 class _PuzzleGameState extends State<PuzzleGame> {
   final AudioService _audioService = AudioService();
   
   // Puzzle configuration
-  static const int gridSize = 3; // 3x3 puzzle
-  static const int totalTiles = gridSize * gridSize;
+  static const int gridSize = 3; // 3x3 jigsaw puzzle
+  static const int totalPieces = gridSize * gridSize;
   
   // Game state
-  late List<int> _tiles;
-  int _emptyTileIndex = totalTiles - 1;
+  late List<PuzzlePiece?> _board; // The puzzle board (where pieces are placed)
+  late List<PuzzlePiece> _availablePieces; // Pieces to drag from
   int _moves = 0;
   bool _isGameWon = false;
   
-  // Biblical themed colors for tiles
-  final List<Color> _tileColors = [
-    Colors.red.shade300,
-    Colors.blue.shade300,
-    Colors.green.shade300,
-    Colors.yellow.shade300,
-    Colors.purple.shade300,
-    Colors.orange.shade300,
-    Colors.pink.shade300,
-    Colors.teal.shade300,
+  // Puzzle pieces with biblical/spiritual emojis
+  final List<PuzzlePiece> _allPieces = [
+    PuzzlePiece(id: 0, emoji: '📖', color: Colors.blue.shade300),
+    PuzzlePiece(id: 1, emoji: '🙏', color: Colors.purple.shade300),
+    PuzzlePiece(id: 2, emoji: '✝️', color: Colors.red.shade300),
+    PuzzlePiece(id: 3, emoji: '🕊️', color: Colors.teal.shade300),
+    PuzzlePiece(id: 4, emoji: '⭐', color: Colors.yellow.shade300),
+    PuzzlePiece(id: 5, emoji: '🌟', color: Colors.orange.shade300),
+    PuzzlePiece(id: 6, emoji: '💝', color: Colors.pink.shade300),
+    PuzzlePiece(id: 7, emoji: '🌈', color: Colors.green.shade300),
+    PuzzlePiece(id: 8, emoji: '🔔', color: Colors.indigo.shade300),
   ];
 
   @override
@@ -48,11 +57,12 @@ class _PuzzleGameState extends State<PuzzleGame> {
   }
 
   void _initializePuzzle() {
-    // Initialize tiles in order (0-8, where 8 is empty)
-    _tiles = List.generate(totalTiles, (index) => index);
+    // Initialize empty board
+    _board = List.filled(totalPieces, null);
     
-    // Shuffle the puzzle
-    _shufflePuzzle();
+    // Shuffle available pieces
+    _availablePieces = List.from(_allPieces);
+    _availablePieces.shuffle(Random());
     
     setState(() {
       _moves = 0;
@@ -60,66 +70,25 @@ class _PuzzleGameState extends State<PuzzleGame> {
     });
   }
 
-  void _shufflePuzzle() {
-    final random = Random();
-    
-    // Make random valid moves to ensure solvability
-    for (int i = 0; i < 100; i++) {
-      List<int> validMoves = _getValidMoves();
-      if (validMoves.isNotEmpty) {
-        int randomMove = validMoves[random.nextInt(validMoves.length)];
-        _swapTiles(_emptyTileIndex, randomMove);
-      }
-    }
-  }
-
-  List<int> _getValidMoves() {
-    List<int> validMoves = [];
-    int row = _emptyTileIndex ~/ gridSize;
-    int col = _emptyTileIndex % gridSize;
-    
-    // Check up
-    if (row > 0) validMoves.add(_emptyTileIndex - gridSize);
-    // Check down
-    if (row < gridSize - 1) validMoves.add(_emptyTileIndex + gridSize);
-    // Check left
-    if (col > 0) validMoves.add(_emptyTileIndex - 1);
-    // Check right
-    if (col < gridSize - 1) validMoves.add(_emptyTileIndex + 1);
-    
-    return validMoves;
-  }
-
-  void _swapTiles(int index1, int index2) {
-    int temp = _tiles[index1];
-    _tiles[index1] = _tiles[index2];
-    _tiles[index2] = temp;
-    _emptyTileIndex = index2;
-  }
-
-  void _onTileTap(int index) {
+  void _onPiecePlaced(int boardIndex, PuzzlePiece piece) {
     if (_isGameWon) return;
     
-    // Check if tile is adjacent to empty tile
-    int row = index ~/ gridSize;
-    int col = index % gridSize;
-    int emptyRow = _emptyTileIndex ~/ gridSize;
-    int emptyCol = _emptyTileIndex % gridSize;
-    
-    bool isAdjacent = (row == emptyRow && (col - emptyCol).abs() == 1) ||
-                      (col == emptyCol && (row - emptyRow).abs() == 1);
-    
-    if (!isAdjacent) {
-      _audioService.playMismatch();
-      return;
-    }
-    
     setState(() {
-      _swapTiles(_emptyTileIndex, index);
+      // Remove piece from available pieces
+      _availablePieces.removeWhere((p) => p.id == piece.id);
+      
+      // Place piece on board
+      _board[boardIndex] = piece;
+      
       _moves++;
     });
     
-    _audioService.playClick();
+    // Play sound based on correctness
+    if (boardIndex == piece.id) {
+      _audioService.playClick();
+    } else {
+      _audioService.playMismatch();
+    }
     
     // Check if puzzle is solved
     if (_isPuzzleSolved()) {
@@ -130,9 +99,24 @@ class _PuzzleGameState extends State<PuzzleGame> {
     }
   }
 
+  void _onPieceRemoved(int boardIndex) {
+    if (_isGameWon) return;
+    
+    setState(() {
+      PuzzlePiece? piece = _board[boardIndex];
+      if (piece != null) {
+        _board[boardIndex] = null;
+        _availablePieces.add(piece);
+        _moves++;
+      }
+    });
+  }
+
   bool _isPuzzleSolved() {
-    for (int i = 0; i < totalTiles; i++) {
-      if (_tiles[i] != i) return false;
+    for (int i = 0; i < totalPieces; i++) {
+      if (_board[i] == null || _board[i]!.id != i) {
+        return false;
+      }
     }
     return true;
   }
@@ -141,7 +125,7 @@ class _PuzzleGameState extends State<PuzzleGame> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🧩 Quebra-Cabeça'),
+        title: const Text('🧩 Quebra-Cabeça Jigsaw'),
         backgroundColor: Colors.indigo,
         actions: [
           Padding(
@@ -163,145 +147,254 @@ class _PuzzleGameState extends State<PuzzleGame> {
             colors: [Colors.indigo.shade300, Colors.indigo.shade700],
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Victory message
-              if (_isGameWon)
+        child: SingleChildScrollView(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 20),
+
+                // Victory message
+                if (_isGameWon)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          '🎉 PARABÉNS! 🎉',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Você completou em $_moves movimentos!',
+                          style: const TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Instructions
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'Arraste os emojis para os slots corretos',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Puzzle board (drop targets)
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  margin: const EdgeInsets.only(bottom: 20),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: Colors.black.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Column(
+                  child: SizedBox(
+                    width: 330,
+                    height: 330,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: gridSize,
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                      ),
+                      itemCount: totalPieces,
+                      itemBuilder: (context, index) {
+                        PuzzlePiece? placedPiece = _board[index];
+                        bool isCorrect = placedPiece != null && placedPiece.id == index;
+                        
+                        return DragTarget<PuzzlePiece>(
+                          onWillAcceptWithDetails: (details) => placedPiece == null,
+                          onAcceptWithDetails: (details) => _onPiecePlaced(index, details.data),
+                          builder: (context, candidateData, rejectedData) {
+                            return GestureDetector(
+                              onTap: placedPiece != null ? () => _onPieceRemoved(index) : null,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                decoration: BoxDecoration(
+                                  color: placedPiece != null
+                                      ? placedPiece.color
+                                      : Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isCorrect 
+                                        ? Colors.green
+                                        : candidateData.isNotEmpty 
+                                            ? Colors.yellow
+                                            : Colors.white.withOpacity(0.3),
+                                    width: isCorrect ? 3 : 2,
+                                  ),
+                                  boxShadow: placedPiece != null ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 5,
+                                      spreadRadius: 2,
+                                    ),
+                                  ] : [],
+                                ),
+                                child: Center(
+                                  child: placedPiece != null
+                                      ? Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              placedPiece.emoji,
+                                              style: const TextStyle(fontSize: 40),
+                                            ),
+                                            if (isCorrect)
+                                              const Icon(
+                                                Icons.check_circle,
+                                                color: Colors.green,
+                                                size: 20,
+                                              ),
+                                          ],
+                                        )
+                                      : Text(
+                                          '${index + 1}',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            color: Colors.white.withOpacity(0.3),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Available pieces to drag
+                if (_availablePieces.isNotEmpty)
+                  Column(
                     children: [
                       const Text(
-                        '🎉 PARABÉNS! 🎉',
+                        'Arraste as peças:',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 28,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Text(
-                        'Você completou em $_moves movimentos!',
-                        style: const TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Instructions
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Deslize as peças para ordená-las de 1 a 8',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Puzzle grid
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: SizedBox(
-                  width: 330,
-                  height: 330,
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: gridSize,
-                      crossAxisSpacing: 5,
-                      mainAxisSpacing: 5,
-                    ),
-                    itemCount: totalTiles,
-                    itemBuilder: (context, index) {
-                      int tileNumber = _tiles[index];
-                      bool isEmpty = tileNumber == totalTiles - 1;
-                      
-                      return GestureDetector(
-                        onTap: () => _onTileTap(index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: isEmpty 
-                                ? Colors.transparent 
-                                : _tileColors[tileNumber % _tileColors.length],
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: isEmpty ? [] : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 5,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: isEmpty 
-                                ? null 
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${tileNumber + 1}',
-                                        style: const TextStyle(
-                                          fontSize: 48,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black,
-                                              offset: Offset(2, 2),
-                                              blurRadius: 3,
-                                            ),
-                                          ],
-                                        ),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: _availablePieces.map((piece) {
+                            return Draggable<PuzzlePiece>(
+                              data: piece,
+                              feedback: Material(
+                                color: Colors.transparent,
+                                child: Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: piece.color.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        blurRadius: 10,
+                                        spreadRadius: 5,
                                       ),
                                     ],
                                   ),
-                          ),
+                                  child: Center(
+                                    child: Text(
+                                      piece.emoji,
+                                      style: const TextStyle(fontSize: 40),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              childWhenDragging: Opacity(
+                                opacity: 0.3,
+                                child: _buildPieceWidget(piece),
+                              ),
+                              child: _buildPieceWidget(piece),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    },
+                      ),
+                    ],
+                  ),
+
+                const SizedBox(height: 30),
+
+                // Reset button
+                ElevatedButton.icon(
+                  onPressed: _initializePuzzle,
+                  icon: const Icon(Icons.shuffle, size: 24),
+                  label: const Text(
+                    'Reiniciar',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 30),
-
-              // Reset button
-              ElevatedButton.icon(
-                onPressed: _initializePuzzle,
-                icon: const Icon(Icons.shuffle, size: 24),
-                label: const Text(
-                  'Embaralhar',
-                  style: TextStyle(fontSize: 18),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              ),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPieceWidget(PuzzlePiece piece) {
+    return Container(
+      width: 80,
+      height: 80,
+      decoration: BoxDecoration(
+        color: piece.color,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 5,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          piece.emoji,
+          style: const TextStyle(fontSize: 40),
         ),
       ),
     );

@@ -3,12 +3,13 @@ import '../models/quiz_service.dart';
 import '../models/question.dart';
 import 'quiz_screen.dart';
 import 'pie_quiz_screen.dart';
-import 'memory_game_screen.dart';
+
 import 'stats_screen.dart';
 import 'multiplayer/multiplayer_menu_screen.dart';
 import '../widgets/emoji_text.dart';
 import '../services/audio_service.dart';
 import 'minigames_menu_screen.dart';
+import '../widgets/settings_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {'emoji': '🥧', 'title': 'Quiz Torta na Cara', 'desc': 'Duelo 1v1 local - quem errar perde!'},
     {'emoji': '🌐', 'title': 'Partida Online', 'desc': 'Jogue com amigos em tempo real!'},
     {'emoji': '🕹️', 'title': 'Jogo da Memória', 'desc': 'Encontre pares bíblicos!'},
-    {'emoji': '�', 'title': 'Outros Minigames', 'desc': '7 jogos divertidos te aguardam!'},
+    {'emoji': '�', 'title': 'Minigames', 'desc': '7 jogos divertidos te aguardam!'},
     {'emoji': '📊', 'title': 'Estatísticas', 'desc': 'Veja seu desempenho e conquistas!'},
   ];
 
@@ -200,15 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 };
               } else if (index == 3) {
-                onPressed = () {
-                  AudioService().playClick();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => MemoryGameScreen()),
-                  );
-                };
-              } else if (index == 4) {
-                // Outros Minigames
+                // Minigames
                 onPressed = () {
                   AudioService().playClick();
                   Navigator.push(
@@ -216,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(builder: (context) => MinigamesMenuScreen()),
                   );
                 };
-              } else if (index == 5) { // Estatísticas é agora o índice 5
+              } else if (index == 4) { // Estatísticas
                 onPressed = () {
                   AudioService().playClick();
                   Navigator.push(
@@ -351,6 +344,26 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 16),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          AudioService().playClick();
+          showDialog(
+            context: context,
+            builder: (context) => SettingsDialog(
+              onThemeChanged: (isDark) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Tema ${isDark ? "escuro" : "claro"} ativado!'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+        backgroundColor: Color(0xFF4A90E2),
+        child: Icon(Icons.settings, color: Colors.white),
       ),
     );
   }
